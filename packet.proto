@@ -1,0 +1,20 @@
+syntax = "proto3";
+package tb;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/bdreece/tinybroker/tb";
+
+message Packet {
+  enum PacketType {
+    PUBLISH = 0;
+    SUBSCRIBE = 1;
+    RESPONSE = 2;
+    ERROR = 3;
+  }
+  
+  PacketType type = 1;
+  google.protobuf.Timestamp time = 2;
+  string topic = 3;
+  bytes data = 4;
+}
