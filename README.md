@@ -43,7 +43,7 @@ $ go get github.com/bdreece/tinybroker/tb
 
 ### Running
 
-Once you've installed tinybroker, the executable should be in your `$GOPATH/bin` directory. This can be executed as `tinybrokerd`, assuming you've configured go correctly.
+Once you've installed tinybroker, the executable should be in your `$GOPATH/bin` directory. This can be executed as `tinybroker`, assuming you've configured go correctly.
 
 ---
 
@@ -55,7 +55,7 @@ The API reference is currently under development, but I plan to use some amalgam
 
 ### tinybrokerd
 
-The `tinybrokerd` CLI is still under development. Check back here for updated regarding its usage
+The `tinybroker` CLI is still under development. Check back here for updated regarding its usage
 
 ---
 
