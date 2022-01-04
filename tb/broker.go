@@ -27,6 +27,10 @@ func Recoverer(maxPanics int, loc string, f func()) {
 }
 
 func (b *Broker) accept(c chan<- *Client, verbose *bool, packetLen int) {
+	if *verbose {
+		log.Println("[LOG] (Broker/accept) Started accept routine")
+	}
+
 	for {
 		// Accept a new connection
 		conn, err := b.listener.Accept()
@@ -74,6 +78,9 @@ func (b *Broker) service(c <-chan *Client, verbose *bool, dataLen int) {
 				switch packet.PacketType {
 				// Pub
 				case Packet_PUBLISH:
+					if *verbose {
+						log.Printf("[LOG] (Broker/service) PUBLISH %s\n", packet.Topic)
+					}
 					topic := b.topics[packet.Topic]
 					if topic == nil {
 						// Topic doesn't exist, create it
@@ -83,6 +90,9 @@ func (b *Broker) service(c <-chan *Client, verbose *bool, dataLen int) {
 					topic.Buf <- packet.Data
 				// Sub
 				case Packet_SUBSCRIBE:
+					if *verbose {
+						log.Printf("[LOG] (Broker/service) SUBSCRIBE %s\n", packet.Topic)
+					}
 					topic := b.topics[packet.Topic]
 					if topic == nil {
 						// Topic doesn't exist, create it
@@ -108,7 +118,7 @@ func (b *Broker) Start(addr string, verbose *bool, connLen, packetLen, dataLen i
 	}
 
 	if *verbose {
-		log.Println("[LOG] (Broker/Start): Opened listening socket")
+		log.Printf("[LOG] (Broker/Start): Opened listening socket on address %s\n", addr)
 	}
 	// Launch accept and service goroutines through panic handler
 	c := make(chan *Client, connLen)
