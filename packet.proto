@@ -13,8 +13,8 @@ message Packet {
     ERROR = 3;
   }
   
-  PacketType type = 1;
-  google.protobuf.Timestamp time = 2;
+  PacketType packetType = 1;
+  google.protobuf.Timestamp timeStamp = 2;
   string topic = 3;
   bytes data = 4;
 }
