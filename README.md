@@ -1,7 +1,9 @@
 # tinybroker
 
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/bdreece/tinybroker/Go)
+
 ![Lines of code](https://img.shields.io/tokei/lines/github/bdreece/tinybroker)
+
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/bdreece/tinybroker)
 
 A simple message broker, written in Go
