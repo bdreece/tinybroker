@@ -13,7 +13,7 @@ type Topic struct {
 	next int
 }
 
-func NewTopic(name string, queueLen int) *Topic {
+func NewTopic(name string, verbose *bool, queueLen int) *Topic {
 	topic := &Topic{}
 
 	topic.Name = name
@@ -22,17 +22,21 @@ func NewTopic(name string, queueLen int) *Topic {
 	topic.subs = make([]*Client, queueLen)
 	topic.next = 0
 
-	go Recoverer(5, "Topic/service-"+name, func() { topic.service() })
+	go Recoverer(5, "Topic/service-"+name, func() { topic.service(verbose) })
 
 	return topic
 }
 
-func (t *Topic) service() {
+func (t *Topic) service(verbose *bool) {
 	for {
 		select {
 		case data := <-t.Buf:
+			if *verbose {
+				log.Printf("[LOG] (Topic/service-%s): Received %d bytes\n", t.Name, len(data))
+			}
+
 			// Create response packet
-			packet := Packet{}
+			packet := new(Packet)
 			packet.PacketType = Packet_RESPONSE
 			packet.Topic = t.Name
 			packet.TimeStamp = timestamppb.Now()
@@ -52,7 +56,9 @@ func (t *Topic) service() {
 			t.subs = append(t.subs, client)
 
 		default:
-			log.Println("[LOG] (Topic/service-" + t.Name + "): No activity")
+			if *verbose {
+				log.Printf("[LOG] (Topic/service-%s): No activity", t.Name)
+			}
 		}
 	}
 }
