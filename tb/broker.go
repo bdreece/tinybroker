@@ -81,11 +81,13 @@ func (b *Broker) service(c <-chan *Client, verbose *bool, dataLen int) {
 					if *verbose {
 						log.Printf("[LOG] (Broker/service) PUBLISH %s\n", packet.Topic)
 					}
+
 					topic := b.topics[packet.Topic]
 					if topic == nil {
 						// Topic doesn't exist, create it
 						b.topics[packet.Topic] = NewTopic(packet.Topic, verbose, dataLen)
 					}
+
 					// Send data to topic service routine
 					topic.Buf <- packet.Data
 				// Sub
@@ -93,11 +95,14 @@ func (b *Broker) service(c <-chan *Client, verbose *bool, dataLen int) {
 					if *verbose {
 						log.Printf("[LOG] (Broker/service) SUBSCRIBE %s\n", packet.Topic)
 					}
+
 					topic := b.topics[packet.Topic]
 					if topic == nil {
 						// Topic doesn't exist, create it
 						topic = NewTopic(packet.Topic, verbose, dataLen)
 					}
+
+					// Send client to topic service routine
 					topic.Sub <- client
 				// Other
 				default:
@@ -108,17 +113,17 @@ func (b *Broker) service(c <-chan *Client, verbose *bool, dataLen int) {
 	}
 }
 
-func (b *Broker) Start(addr string, verbose *bool, connLen, packetLen, dataLen int) {
+func (b *Broker) Start(port string, verbose *bool, connLen, packetLen, dataLen int) {
 	var err error
 
 	// Open listening socket
-	b.listener, err = net.Listen("tcp4", addr)
+	b.listener, err = net.Listen("tcp4", port)
 	if err != nil {
 		log.Fatalln("[ABORT] (Broker/Start):", err)
 	}
 
 	if *verbose {
-		log.Printf("[LOG] (Broker/Start): Opened listening socket on address %s\n", addr)
+		log.Printf("[LOG] (Broker/Start): Opened listening socket on port %s\n", port)
 	}
 	// Launch accept and service goroutines through panic handler
 	c := make(chan *Client, connLen)

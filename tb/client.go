@@ -4,6 +4,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
+	"time"
 )
 
 type Client struct {
@@ -26,6 +27,12 @@ func (c *Client) read(verbose *bool) {
 		n, err = c.Conn.Read(bytes)
 		if err != nil {
 			log.Println("[ERR] (Client/service/read):", err)
+			continue
+		}
+
+		if n <= 0 {
+			log.Println("[LOG] (Client/service/read): Received 0 bytes")
+			time.Sleep(time.Second)
 		}
 
 		if *verbose {

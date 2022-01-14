@@ -20,3 +20,6 @@ tinybroker
 
 # Go workspace file
 go.work
+
+# prog script
+prog.yml
