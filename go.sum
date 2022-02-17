@@ -1,3 +1,5 @@
+github.com/bdreece/tinybroker/resthandlers v0.0.0-20220217035249-a6917584c7ca h1:thl0PH2Uwv7uTdlC8kyuiRiezkMGfCZOCmtLlD/465w=
+github.com/bdreece/tinybroker/resthandlers v0.0.0-20220217035249-a6917584c7ca/go.mod h1:Kwq0AqEB3WrTwWuJVTreqWGYzZpvD4j4F8mZjpt0Fnw=
 github.com/felixge/httpsnoop v1.0.1 h1:lvB5Jl89CsZtGIWuTcDM1E/vkVs49/Ml7JJe07l8SPQ=
 github.com/felixge/httpsnoop v1.0.1/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259 h1:ZHJ7+IGpuOXtVf6Zk/a3WuHQgkC+vXwaqfUBDFwahtI=
