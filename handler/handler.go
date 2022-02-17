@@ -12,7 +12,7 @@ type Handler struct {
 
 func New(rdb *redis.Client) Handler {
   return Handler {
-    Rdb: rdb
+    Rdb: rdb,
   }
 }
 
