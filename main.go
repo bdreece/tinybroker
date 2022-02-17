@@ -5,6 +5,7 @@ import (
     "flag"
 	"log"
     "github.com/gorilla/mux"
+    mw "github.com/bdreece/tinybroker/middleware"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,7 +20,7 @@ const (
   killTimeout = 5 * time.Second
 )
 
-func configureServer(addr string, writeTimeout, readTimeout time.Duration) http.Server {
+func configureServer(addr, secret string, writeTimeout, readTimeout time.Duration) http.Server {
   // Configure router and server
   router := mux.NewRouter()
   
@@ -29,8 +30,11 @@ func configureServer(addr string, writeTimeout, readTimeout time.Duration) http.
     DB:         0,
   })
 
+  authMw := mw.New(secret) 
+
   router.Handle("/tb/{topic}", handler).
          Methods("POST", "GET", "PUT", "DELETE")
+  router.Use(authMw.authMiddleware)
 
   return http.Server{
     Handler:    router,
@@ -81,7 +85,7 @@ func main() {
     log.Println("[LOG] Configuring router URL handler")
   }
 
-  srv := configureServer(addr, writeTimeout, readTimeout)
+  srv := configureServer(addr, os.Getenv("TB_SECRET"), writeTimeout, readTimeout)
 
   if verbose {
     log.Println("[LOG] Starting server")
