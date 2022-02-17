@@ -23,7 +23,12 @@ func configureServer(addr string, writeTimeout, readTimeout time.Duration) http.
   // Configure router and server
   router := mux.NewRouter()
   
-  handler := rest.New(redis.NewClient())
+  handler := rest.New(&redis.Options{
+    Addr:       "localhost:6379",
+    Password:   "",
+    DB:         0,
+  })
+
   router.Handle("/tb/{topic}", handler).
          Methods("POST", "GET", "PUT", "DELETE")
 

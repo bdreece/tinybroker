@@ -10,9 +10,9 @@ type Handler struct {
   Rdb *redis.Client
 }
 
-func New(rdb *redis.Client) Handler {
+func New(opts *redis.Options) Handler {
   return Handler {
-    Rdb: rdb,
+    Rdb: redis.NewClient(opts),
   }
 }
 
