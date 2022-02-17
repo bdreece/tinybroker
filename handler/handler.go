@@ -7,7 +7,13 @@ import (
 )
 
 type Handler struct {
-  rdb *redis.Client
+  Rdb *redis.Client
+}
+
+func New(rdb *redis.Client) Handler {
+  return Handler {
+    Rdb: rdb
+  }
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

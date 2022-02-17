@@ -1,5 +1,5 @@
-github.com/bdreece/tinybroker/resthandlers v0.0.0-20220217035249-a6917584c7ca h1:thl0PH2Uwv7uTdlC8kyuiRiezkMGfCZOCmtLlD/465w=
-github.com/bdreece/tinybroker/resthandlers v0.0.0-20220217035249-a6917584c7ca/go.mod h1:Kwq0AqEB3WrTwWuJVTreqWGYzZpvD4j4F8mZjpt0Fnw=
+github.com/bdreece/tinybroker/handler v0.0.0-20220217140914-8d15aceca659 h1:koirrnYwrCB+Mfeh1SWPOnHZg+JQJrtcgss7oU/4i+I=
+github.com/bdreece/tinybroker/handler v0.0.0-20220217140914-8d15aceca659/go.mod h1:ofrdaGUtxZ9wQ4WnwOqnPpc5QXHV0bIJNPP+ntiVeYw=
 github.com/cespare/xxhash/v2 v2.1.2 h1:YRXhKfTDauu4ajMg1TPgFO5jnlC2HCbmLXMcTG5cbYE=
 github.com/cespare/xxhash/v2 v2.1.2/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
