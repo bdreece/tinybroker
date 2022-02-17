@@ -9,7 +9,7 @@ import (
 	"os"
 	"os/signal"
 	redis "github.com/go-redis/redis/v8"
-	rest "github.com/bdreece/tinybroker/resthandlers"
+	rest "github.com/bdreece/tinybroker/handler"
 	"time"
 )
 
@@ -19,26 +19,15 @@ const (
   killTimeout = 5 * time.Second
 )
 
-var rdb redis.Client
-
-func methodRouter(w http.ResponseWriter, r *http.Request) {
-  switch r.Method {
-    case "POST":
-      rest.CreateHandler{&rdb}.ServeHTTP(w, r)
-    case "GET":
-      rest.ReadHandler{&rdb}.ServeHTTP(w, r)
-    case "PUT":
-      rest.UpdateHandler{&rdb}.ServeHTTP(w, r)
-    case "DELETE":
-      rest.DeleteHandler{&rdb}.ServeHTTP(w, r)
-    default: log.Printf("[ERR] Invalid request method: %s\n", r.Method)
-  }
-}
-
 func configureServer(addr string, writeTimeout, readTimeout time.Duration) http.Server {
   // Configure router and server
   router := mux.NewRouter()
-  router.HandleFunc("/tb/{topic}", methodRouter).
+  
+  handler := rest.Handler{
+    rdb: &redis.NewClient()
+  }
+
+  router.Handle("/tb/{topic}", handler).
          Methods("POST", "GET", "PUT", "DELETE")
 
   return http.Server{
@@ -49,7 +38,7 @@ func configureServer(addr string, writeTimeout, readTimeout time.Duration) http.
   }
 }
 
-func serveHTTP(srv *http.Server) {
+func launchServer(srv *http.Server) {
   // Launch server asynchronously
   go func() {
     if err := srv.ListenAndServe(); err != nil {
@@ -96,7 +85,7 @@ func main() {
     log.Println("[LOG] Starting server")
   }
 
-  serveHTTP(&srv)
+  launchServer(&srv)
 
   if verbose {
     log.Println("[LOG] Shutdown signal received")
