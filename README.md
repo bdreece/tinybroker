@@ -38,7 +38,8 @@ $ go install github.com/bdreece/tinybroker@latest
 If you would like to mess around with the library sources as well:
 
 ```console
-$ go get github.com/bdreece/tinybroker/tb
+$ go get github.com/bdreece/tinybroker/resthandlers
+$ go get github.com/bdreece/tinybroker/middleware
 ```
 
 ### Running
