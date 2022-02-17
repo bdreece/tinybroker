@@ -21,7 +21,7 @@ A simple message broker, written in Go
 
 ## Overview
 
-tinybroker is a message broker, which implements the pub/sub model, written in Go. The message specification for tinybroker is written using Google Protobufs, so as to port easily to many languages.
+tinybroker is a message broker, which implements the pub/sub model, written in Go. Clients can interact with the broker's REST API using standard CRUD conventions on the "/tb/{topic}" endpoints. Messages published to the broker are stored in memory using Redis channels.
 
 ---
 
