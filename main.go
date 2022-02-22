@@ -5,36 +5,28 @@ import (
     "flag"
 	"log"
     "github.com/gorilla/mux"
-    mw "github.com/bdreece/tinybroker/middleware"
 	"net/http"
 	"os"
 	"os/signal"
-	redis "github.com/go-redis/redis/v8"
-	rest "github.com/bdreece/tinybroker/handler"
 	"time"
 )
 
 const (
-  writeTimeout time.Duration = 15 * time.Second
-  readTimeout = 15 * time.Second
+  writeTimeout time.Duration = 5 * time.Second
+  readTimeout = 5 * time.Second
   killTimeout = 5 * time.Second
 )
 
-func configureServer(addr, secret string, writeTimeout, readTimeout time.Duration) http.Server {
+func configureServer(addr string, verbose bool, writeTimeout, readTimeout time.Duration, capacity int) http.Server {
   // Configure router and server
   router := mux.NewRouter()
   
-  handler := rest.New(&redis.Options{
-    Addr:       "localhost:6379",
-    Password:   "",
-    DB:         0,
-  })
+  handler := NewHandler(capacity, verbose)
 
-  authMw := mw.New(secret) 
+  // authMw := NewMiddleware(secret) 
 
-  router.Handle("/tb/{topic}", handler).
+  router.Handle("/{topic}", handler).
          Methods("POST", "GET", "PUT", "DELETE")
-  router.Use(authMw.authMiddleware)
 
   return http.Server{
     Handler:    router,
@@ -73,10 +65,12 @@ func main() {
   var (
     addr string
     verbose bool
+    capacity int
   )
 
   // Parse command-line flags
   flag.BoolVar(&verbose, "v", false, "Enable verbose output")
+  flag.IntVar(&capacity, "c", 32, "Topic queue capacity")
   flag.StringVar(&addr, "a", "127.0.0.1:8080", "Listening address and port")
   flag.Parse()
 
@@ -85,7 +79,7 @@ func main() {
     log.Println("[LOG] Configuring router URL handler")
   }
 
-  srv := configureServer(addr, os.Getenv("TB_SECRET"), writeTimeout, readTimeout)
+  srv := configureServer(addr, verbose, writeTimeout, readTimeout, capacity)
 
   if verbose {
     log.Println("[LOG] Starting server")
