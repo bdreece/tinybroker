@@ -21,7 +21,7 @@ A simple message broker, written in Go
 
 ## Overview
 
-tinybroker is a message broker, which implements the pub/sub model, written in Go. Clients can interact with the broker's REST API using standard CRUD conventions on the "/tb/{topic}" endpoints. Messages published to the broker are stored in memory using Redis channels.
+tinybroker is a message broker, which implements the pub/sub model, written in Go. Clients can interact with the broker's REST API using standard CRUD conventions on the "/tb/{topic}" endpoints. Messages published to the broker are stored in memory using asynchronous channels.
 
 ---
 
@@ -35,13 +35,6 @@ Downloading tinybroker is as simple as:
 $ go install github.com/bdreece/tinybroker@latest
 ```
 
-If you would like to mess around with the library sources as well:
-
-```console
-$ go get github.com/bdreece/tinybroker/resthandlers
-$ go get github.com/bdreece/tinybroker/middleware
-```
-
 ### Running
 
 Once you've installed tinybroker, the executable should be in your `$GOPATH/bin` directory. This can be executed as `tinybroker`, assuming you've configured go correctly.
@@ -50,16 +43,17 @@ Once you've installed tinybroker, the executable should be in your `$GOPATH/bin`
 
 ## Usage
 
-### API Reference
-
-The API reference is currently under development, but I plan to use some amalgam of Godoc and Doxygen to generate from source code.
-
-### tinybrokerd
-
-The `tinybroker` CLI is still under development. Check back here for updated regarding its usage
+```
+Usage of ./tinybroker:
+  -a string
+        Listening address and port (default "127.0.0.1:8080")
+  -c int
+        Topic queue capacity (default 32)
+  -v    Enable verbose output
+```
 
 ---
 
 ## Future Plans
 
-In the future, I may make the Broker library API a bit more configurable (i.e. byte pre- and post-processiong, etc.), and I plan to flesh out the broker daemon CLI in the coming weeks.
+In the future, I may make the broker library API a bit more configurable (i.e. byte pre and post-processiong, etc.).
