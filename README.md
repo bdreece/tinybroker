@@ -13,8 +13,6 @@ A simple message broker, written in Go
   - [Downloading and Installing](#downloading-and-installing)
   - [Running](#running)
 - [Usage](#usage)
-  - [API Reference](#api-reference)
-  - [tinybrokerd](#tinybrokerd)
 - [Future Plans](#future-plans)
 
 ---
