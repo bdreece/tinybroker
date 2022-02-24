@@ -63,7 +63,7 @@ tinybroker exposes its API over HTTP, utilizing standard CRUD conventions for re
 - Update topic 'fruits': `PUT /fruits`
 - Delete topic 'fruits': `DELETE /fruits`
 
-Furthermore, data may be passed along to the broker using the multipart form content type under the key: `TB_DATA`
+Furthermore, data may be passed along to the broker using the multipart form content type under the key: `TB_DATA`. Likewise, login information can be passed to the `/login` endpoint using the multipart form with keys `TB_USER` and `TB_PASS`.
 
 In order to help illustrate proper broker requests, I've added the following valid `curl` commands for a local tinybroker instance (given the `TB_USER` and `TB_PASS` environment variables have been set to 'user' and 'pass', respectively):
 
