@@ -54,7 +54,6 @@ func (h Handler) CreateResponse(w http.ResponseWriter, r *http.Request, topic st
   }
 
   data := r.PostFormValue("TB_DATA")
-  _ := r.
   if h.Topics[topic] == nil {
     h.Topics[topic] = make(chan string, h.Capacity)
   }
