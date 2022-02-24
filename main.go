@@ -17,15 +17,19 @@ const (
   killTimeout = 5 * time.Second
 )
 
-func configureServer(addr string, verbose bool, writeTimeout, readTimeout time.Duration, capacity int) http.Server {
+
+func configureServer(addr, secret string, verbose bool, writeTimeout, readTimeout time.Duration, capacity int) http.Server {
   // Configure router and server
   router := mux.NewRouter()
   
   handler := NewHandler(capacity, verbose)
 
-  // authMw := NewMiddleware(secret) 
+  authMw := NewMiddleware(secret, verbose) 
 
-  router.Handle("/{topic}", handler).
+  router.Handle("/login", authMw).
+         Methods("POST")
+
+  router.Handle("/{topic}", authMw.AuthMiddleware(handler)).
          Methods("POST", "GET", "PUT", "DELETE")
 
   return http.Server{
@@ -64,6 +68,7 @@ func shutdownProcedure(srv *http.Server, ctx context.Context) {
 func main() {
   var (
     addr string
+    secret = os.Getenv("TB_SECRET")
     verbose bool
     capacity int
   )
@@ -79,7 +84,7 @@ func main() {
     log.Println("[LOG] Configuring router URL handler")
   }
 
-  srv := configureServer(addr, verbose, writeTimeout, readTimeout, capacity)
+  srv := configureServer(addr, secret, verbose, writeTimeout, readTimeout, capacity)
 
   if verbose {
     log.Println("[LOG] Starting server")
