@@ -80,4 +80,4 @@ In order to help illustrate proper broker requests, I've added the following val
 
 ## Future Plans
 
-In the future, I may make the broker library API a bit more configurable (i.e. byte pre and post-processiong, etc.).
+In the future, I may make the broker library API a bit more configurable (e.g. opting in/out of JWT authentication, TLS support, content-type, etc.)
