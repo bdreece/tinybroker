@@ -2,29 +2,47 @@ package main
 
 import (
 	"context"
-    "flag"
+	"errors"
+	"flag"
 	"log"
-    "github.com/gorilla/mux"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
-const (
-  writeTimeout time.Duration = 5 * time.Second
-  readTimeout = 5 * time.Second
-  killTimeout = 5 * time.Second
-)
+func getEnvironmentVars(verbose bool) (string, string, string, error) {
+  var (
+    username string = os.Getenv("TB_USER")
+    password string = os.Getenv("TB_PASS")
+    secret string = os.Getenv("TB_SECRET")
+  )
 
+  if username == "" || password == "" || secret == "" {
+    if verbose {
+      log.Println("[ERR] Empty environment variables!")
+    }
+    return username, password, secret, errors.New("Failed to retrieve some environment variables")
+  }
 
-func configureServer(addr, secret string, verbose bool, writeTimeout, readTimeout time.Duration, capacity int) http.Server {
+  return username, password, secret, nil
+}
+
+func configureServer(addr string, verbose bool, writeTimeout, readTimeout time.Duration, capacity int) http.Server {
+  // Get environment variables
+  username, password, secret, err := getEnvironmentVars(verbose)
+  if err != nil {
+    log.Fatalf("[ERR] %v\n", err.Error())
+  }
+
   // Configure router and server
   router := mux.NewRouter()
   
   handler := NewHandler(capacity, verbose)
 
-  authMw := NewMiddleware(secret, verbose) 
+  authMw := NewMiddleware(username, password, secret, verbose) 
 
   router.Handle("/login", authMw).
          Methods("POST")
@@ -44,7 +62,7 @@ func launchServer(srv *http.Server) {
   // Launch server asynchronously
   go func() {
     if err := srv.ListenAndServe(); err != nil {
-      log.Println(err)
+      log.Fatalf("[ERR] %v\n", err.Error())
     }
   }()
 
@@ -68,14 +86,19 @@ func shutdownProcedure(srv *http.Server, ctx context.Context) {
 func main() {
   var (
     addr string
-    secret = os.Getenv("TB_SECRET")
     verbose bool
     capacity int
+    writeTimeout int64
+    readTimeout int64
+    killTimeout int64
   )
 
   // Parse command-line flags
   flag.BoolVar(&verbose, "v", false, "Enable verbose output")
   flag.IntVar(&capacity, "c", 32, "Topic queue capacity")
+  flag.Int64Var(&writeTimeout, "w", 5, "HTTP write timeout (in seconds)")
+  flag.Int64Var(&readTimeout, "r", 5, "HTTP read timeout (in seconds)")
+  flag.Int64Var(&killTimeout, "k", 5, "Server kill timeout (in seconds)")
   flag.StringVar(&addr, "a", "127.0.0.1:8080", "Listening address and port")
   flag.Parse()
 
@@ -84,7 +107,7 @@ func main() {
     log.Println("[LOG] Configuring router URL handler")
   }
 
-  srv := configureServer(addr, secret, verbose, writeTimeout, readTimeout, capacity)
+  srv := configureServer(addr, verbose, time.Duration(writeTimeout) * time.Second, time.Duration(readTimeout) * time.Second, capacity)
 
   if verbose {
     log.Println("[LOG] Starting server")
@@ -97,7 +120,7 @@ func main() {
   }
 
   // Shutdown timeout
-  ctx, cancel := context.WithTimeout(context.Background(), killTimeout)
+  ctx, cancel := context.WithTimeout(context.Background(), time.Duration(killTimeout) * time.Second)
   defer cancel()
 
   if verbose {

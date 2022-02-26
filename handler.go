@@ -25,7 +25,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   topic := mux.Vars(r)["topic"]
 
   if h.Verbose {
-    log.Printf("Serving request on topic: %s\n", topic)
+    log.Printf("[LOG] Serving request on topic: %s\n", topic)
   }
 
   switch r.Method {
@@ -44,13 +44,13 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   }
 
   if h.Verbose {
-    log.Println("Sent response!")
+    log.Println("[LOG] Sent response!")
   }
 }
 
 func (h Handler) CreateResponse(w http.ResponseWriter, r *http.Request, topic string) {
   if h.Verbose {
-    log.Printf("Creating topic: %s\n", topic)
+    log.Printf("[LOG] Creating topic: %s\n", topic)
   }
 
   data := r.PostFormValue("TB_DATA")
@@ -60,7 +60,7 @@ func (h Handler) CreateResponse(w http.ResponseWriter, r *http.Request, topic st
 
   if len(data) > 0 {
     if h.Verbose {
-      log.Printf("Create request contains data: %s\n", data)
+      log.Printf("[LOG] Create request contains data: %s\n", data)
     }
 
     h.Topics[topic]<- data
@@ -71,12 +71,12 @@ func (h Handler) CreateResponse(w http.ResponseWriter, r *http.Request, topic st
 
 func (h Handler) ReadResponse(w http.ResponseWriter, r *http.Request, topic string) {
   if h.Verbose {
-    log.Printf("Reading from topic: %s\n", topic)
+    log.Printf("[LOG] Reading from topic: %s\n", topic)
   }
 
   if h.Topics[topic] == nil {
     if h.Verbose {
-      log.Println("Topic not found!")
+      log.Printf("[LOG] Topic %s not found!", topic)
     }
     w.WriteHeader(http.StatusNotFound)
     return
@@ -85,23 +85,23 @@ func (h Handler) ReadResponse(w http.ResponseWriter, r *http.Request, topic stri
   data := <-h.Topics[topic]
 
   if h.Verbose {
-    log.Printf("Read data: %s\n", data)
+    log.Printf("[LOG] Read data: %s\n", data)
   }
 
   _, err := w.Write([]byte(data))
   if err != nil {
-    log.Println(err.Error())
+    log.Printf("[ERR] %v\n", err.Error())
   }
 }
 
 func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic string) {
   if h.Verbose {
-    log.Printf("Updating topic: %s\n", topic)
+    log.Printf("[LOG] Updating topic: %s\n", topic)
   }
 
   if h.Topics[topic] == nil {
     if h.Verbose {
-      log.Printf("Topic not found!")
+      log.Printf("[LOG] Topic %s not found!\n", topic)
     }
     w.WriteHeader(http.StatusNotFound)
     return
@@ -110,13 +110,13 @@ func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic st
   data := r.PostFormValue("TB_DATA")
   if len(data) < 1 {
     if h.Verbose {
-      log.Println("Data not found!")
+      log.Println("[LOG] Data not found!")
     }
     w.WriteHeader(http.StatusBadRequest)
   }
 
   if h.Verbose {
-    log.Printf("Updating with data: %s\n", data)
+    log.Printf("[LOG] Updating with data: %s\n", data)
   }
 
   h.Topics[topic]<- data
@@ -125,12 +125,12 @@ func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic st
 
 func (h Handler) DeleteResponse(w http.ResponseWriter, r *http.Request, topic string) {
   if h.Verbose {
-    log.Printf("Deleting topic: %s\n", topic)
+    log.Printf("[LOG] Deleting topic: %s\n", topic)
   }
 
   if h.Topics[topic] == nil {
     if h.Verbose {
-      log.Println("Topic not found!")
+      log.Println("[LOG] Topic not found!")
     }
     w.WriteHeader(http.StatusNotFound)
     return
