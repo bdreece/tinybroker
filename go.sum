@@ -1,5 +1,7 @@
 github.com/akamensky/argparse v1.3.1 h1:kP6+OyvR0fuBH6UhbE6yh/nskrDEIQgEA1SUXDPjx4g=
 github.com/akamensky/argparse v1.3.1/go.mod h1:S5kwC7IuDcEr5VeXtGPRVZ5o/FdhcMlQz4IZQuw64xA=
+github.com/bdreece/go-structs/ringbuf v0.0.0-20220227181023-69da361afddb h1:LuUIObAfda9u/MO2mvohSJ+d+aXQJo6OB9EJnm44QLs=
+github.com/bdreece/go-structs/ringbuf v0.0.0-20220227181023-69da361afddb/go.mod h1:xyYdZFh7GObkUANHLKzfi/azexV1u//sREnrhv8X5VM=
 github.com/golang-jwt/jwt/v4 v4.3.0 h1:kHL1vqdqWNfATmA0FNMdmZNMyZI1U6O31X4rlIPoBog=
 github.com/golang-jwt/jwt/v4 v4.3.0/go.mod h1:/xlHOz8bRuivTWchD4jCa+NbatV+wEUSzwAxVc6locg=
 github.com/gorilla/mux v1.8.0 h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=

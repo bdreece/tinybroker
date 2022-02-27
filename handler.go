@@ -1,20 +1,22 @@
 package main
 
 import (
+	"fmt"
+	"github.com/bdreece/go-structs/ringbuf"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 )
 
 type Handler struct {
-	Topics   map[string]chan string
+	Topics   map[string]*ringbuf.RingBuf
 	Capacity *int
 	Verbose  *int
 }
 
 func NewHandler(capacity *int, verbose *int) Handler {
 	return Handler{
-		Topics:   make(map[string]chan string),
+		Topics:   make(map[string]*ringbuf.RingBuf),
 		Capacity: capacity,
 		Verbose:  verbose,
 	}
@@ -53,8 +55,9 @@ func (h Handler) CreateResponse(w http.ResponseWriter, r *http.Request, topic st
 	}
 
 	data := r.PostFormValue("TB_DATA")
-	if h.Topics[topic] == nil {
-		h.Topics[topic] = make(chan string, *h.Capacity)
+	if _, ok := h.Topics[topic]; !ok {
+		newTopic := ringbuf.New(*h.Capacity)
+		h.Topics[topic] = &newTopic
 	}
 
 	if len(data) > 0 {
@@ -62,7 +65,7 @@ func (h Handler) CreateResponse(w http.ResponseWriter, r *http.Request, topic st
 			log.Printf("[LOG] Create request contains data: %s\n", data)
 		}
 
-		h.Topics[topic] <- data
+		h.Topics[topic].Write(data)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -81,13 +84,21 @@ func (h Handler) ReadResponse(w http.ResponseWriter, r *http.Request, topic stri
 		return
 	}
 
-	data := <-h.Topics[topic]
+	data := h.Topics[topic].Read()
 
-	if *h.Verbose > 1 {
-		log.Printf("[LOG] Read data: %s\n", data)
+	if data == nil {
+		if *h.Verbose > 1 {
+			log.Println("[LOG] Topic contains no data")
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return
 	}
 
-	_, err := w.Write([]byte(data))
+	if *h.Verbose > 1 {
+		log.Printf("[LOG] Read data: %v\n", data)
+	}
+
+	_, err := w.Write([]byte(fmt.Sprint(data)))
 	if err != nil {
 		log.Printf("[ERR] %v\n", err.Error())
 	}
@@ -118,7 +129,7 @@ func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic st
 		log.Printf("[LOG] Updating with data: %s\n", data)
 	}
 
-	h.Topics[topic] <- data
+	h.Topics[topic].Write(data)
 	w.WriteHeader(http.StatusOK)
 }
 

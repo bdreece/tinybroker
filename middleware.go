@@ -55,7 +55,7 @@ func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	ss, err := token.SignedString([]byte(*m.Secret))
 	if err != nil {
-	    log.Printf("[ERR] Error creating JWT: %s\n", err.Error())
+		log.Printf("[ERR] Error creating JWT: %s\n", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
