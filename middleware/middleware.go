@@ -1,4 +1,4 @@
-package middleware
+package github.com/bdreece/tinybroker/middleware
 
 import (
 	"errors"

@@ -1,4 +1,4 @@
-package handler
+package github.com/bdreece/tinybroker/handler
 
 import (
 	"github.com/gorilla/mux"
