@@ -2,29 +2,11 @@ package main
 
 import (
   "context"
-  "errors"
   "flag"
   "log"
   "os"
   "time"
 )
-
-func getEnvironmentVars(verbose bool) (string, string, string, error) {
-  var (
-    username string = os.Getenv("TB_USER")
-    password string = os.Getenv("TB_PASS")
-    secret string = os.Getenv("TB_SECRET")
-  )
-
-  if username == "" || password == "" || secret == "" {
-    if verbose {
-      log.Println("[ERR] Empty environment variables!")
-    }
-    return username, password, secret, errors.New("Failed to retrieve some environment variables")
-  }
-
-  return username, password, secret, nil
-}
 
 func main() {
   var (

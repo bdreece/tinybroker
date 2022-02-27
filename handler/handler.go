@@ -1,4 +1,4 @@
-package github.com/bdreece/tinybroker/handler
+package handler
 
 import (
   "log"
