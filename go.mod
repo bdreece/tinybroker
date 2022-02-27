@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/bdreece/tinybroker/handler v0.0.0-20220217142748-75ae9049517c
-	github.com/bdreece/tinybroker/middleware v0.0.0-20220227152234-9f3a82e00ff9
+	github.com/bdreece/tinybroker/middleware v0.0.0-20220227154909-096089d700ae
 	github.com/gorilla/mux v1.8.0
 )
 

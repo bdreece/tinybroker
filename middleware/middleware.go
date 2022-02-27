@@ -1,120 +1,119 @@
 package middleware
 
 import (
-  "errors"
-  "fmt"
-  "log"
-  "net/http"
-  "time"
+	"errors"
+	"fmt"
+	"log"
+	"net/http"
+	"time"
 
-  jwt "github.com/golang-jwt/jwt/v4"
+	jwt "github.com/golang-jwt/jwt/v4"
 )
 
-
 type Middleware struct {
-  User      string
-  Pass      string
-  Secret    string
-  Verbose   bool
+	User    string
+	Pass    string
+	Secret  string
+	Verbose bool
 }
 
 func NewMiddleware(username, password, secret string, verbose bool) Middleware {
-  return Middleware{
-    User: username,
-    Pass: password,
-    Secret: secret,
-    Verbose: verbose,
-  }
+	return Middleware{
+		User:    username,
+		Pass:    password,
+		Secret:  secret,
+		Verbose: verbose,
+	}
 }
 
 func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  if m.Verbose {
-    log.Printf("[LOG] User from %v attempting to login\n", r.UserAgent())
-  }
+	if m.Verbose {
+		log.Printf("[LOG] User from %v attempting to login\n", r.UserAgent())
+	}
 
-  user := r.PostFormValue("TB_USER")
-  pass := r.PostFormValue("TB_PASS")
+	user := r.PostFormValue("TB_USER")
+	pass := r.PostFormValue("TB_PASS")
 
-  if user != m.User || pass != m.Pass {
-    if m.Verbose {
-      log.Println("[LOG] Username or password incorrect!")
-    }
-    w.WriteHeader(http.StatusUnauthorized)
-    return
-  }
+	if user != m.User || pass != m.Pass {
+		if m.Verbose {
+			log.Println("[LOG] Username or password incorrect!")
+		}
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
-  if m.Verbose {
-    log.Printf("[LOG] User %s logged in!\n", user)
-  }
+	if m.Verbose {
+		log.Printf("[LOG] User %s logged in!\n", user)
+	}
 
-  // Create JWT
-  claims := & jwt.RegisteredClaims{
-    ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
-    Issuer:    user,
-  }
+	// Create JWT
+	claims := &jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
+		Issuer:    user,
+	}
 
-  token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-  ss, err := token.SignedString([]byte(m.Secret))
-  if err != nil {
-    if m.Verbose {
-      log.Printf("[ERR] Error creating JWT: %s\n", err.Error())
-    }
-    w.WriteHeader(http.StatusInternalServerError)
-  }
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	ss, err := token.SignedString([]byte(m.Secret))
+	if err != nil {
+		if m.Verbose {
+			log.Printf("[ERR] Error creating JWT: %s\n", err.Error())
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 
-  w.Write([]byte(ss))
+	w.Write([]byte(ss))
 }
 
 func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
-  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    var tokenString string
-    var token *jwt.Token
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var tokenString string
+		var token *jwt.Token
 
-    // Parse authorization header
-    _, err := fmt.Sscanf(r.Header.Get("Authorization"), "Bearer %v", &tokenString)
-    if err != nil {
-      if m.Verbose {
-        log.Printf("[ERR] Error parsing authorization header: %s\n", err.Error())
-      }
-      w.WriteHeader(http.StatusInternalServerError)
-      return
-    }
+		// Parse authorization header
+		_, err := fmt.Sscanf(r.Header.Get("Authorization"), "Bearer %v", &tokenString)
+		if err != nil {
+			if m.Verbose {
+				log.Printf("[ERR] Error parsing authorization header: %s\n", err.Error())
+			}
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
-    // Parse token
-    token, err = jwt.Parse(tokenString, func (token *jwt.Token) (interface{}, error) {
-      if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-        if m.Verbose {
-          log.Println("Invalid signing method!")
-        }
-        w.WriteHeader(http.StatusUnauthorized)
-        return nil, errors.New("Invalid signing method!")
-      }
+		// Parse token
+		token, err = jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				if m.Verbose {
+					log.Println("Invalid signing method!")
+				}
+				w.WriteHeader(http.StatusUnauthorized)
+				return nil, errors.New("Invalid signing method!")
+			}
 
-      return []byte(m.Secret), nil
-    })
+			return []byte(m.Secret), nil
+		})
 
-    if err != nil {
-      if m.Verbose {
-        log.Printf("[ERR] %v\n", err.Error())
-      }
+		if err != nil {
+			if m.Verbose {
+				log.Printf("[ERR] %v\n", err.Error())
+			}
 
-      w.WriteHeader(http.StatusInternalServerError)
-      return
-    }
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
-    // Check token validity
-    if !token.Valid {
-      if m.Verbose {
-        log.Println("[LOG] Invalid token!")
-      }
-      w.WriteHeader(http.StatusUnauthorized)
-      return
-    }
+		// Check token validity
+		if !token.Valid {
+			if m.Verbose {
+				log.Println("[LOG] Invalid token!")
+			}
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 
-    if m.Verbose {
-      log.Println("[LOG] Successfully validated token!")
-    }
+		if m.Verbose {
+			log.Println("[LOG] Successfully validated token!")
+		}
 
-    next.ServeHTTP(w, r)
-  })
+		next.ServeHTTP(w, r)
+	})
 }
