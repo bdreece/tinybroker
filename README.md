@@ -44,15 +44,27 @@ Once you've installed tinybroker, the executable should be in your `$GOPATH/bin`
 The command-line usage of tinybroker is as follows:
 
 ```
-Usage of ./tinybroker:
-  -a string
-        Listening address and port (default "127.0.0.1:8080")
-  -c int
-        Topic queue capacity (default 32)
-  -v    Enable verbose output
+usage: tinybroker [-h|--help] [-a|--address "<value>"] [-e|--auth-endpoint
+                  "<value>"] [-v|--verbose <integer>] [-c|--topic-capacity
+                  <integer>] [-w|--write-timeout <integer>] [-r|--read-timeout
+                  <integer>] [-k|--kill-timeout <integer>]
+
+                  A simple message broker, written in Go
+
+Arguments:
+
+  -h  --help            Print help information
+  -a  --address         Address to serve broker on (address:port). Default:
+                        :8080
+  -e  --auth-endpoint   API endpoint for JWT authentication. Default: /login
+  -v  --verbose         Enable verbose output. Default: 0
+  -c  --topic-capacity  Topic backlog capacity. Default: 32
+  -w  --write-timeout   HTTP server write timeout (seconds). Default: 5
+  -r  --read-timeout    HTTP server read timeout (seconds). Default: 5
+  -k  --kill-timeout    HTTP server kill signal timeout (seconds). Default: 5
 ```
 
-Additional parameters (i.e. username/password, JWT HMAC secret) may be passed in as environment variables named `TB_USER`, `TB_PASS`, and `TB_SECRET`, respectively.
+Additional parameters (i.e. username, password, JWT HMAC secret) may be passed in as environment variables named `TB_USER`, `TB_PASS`, and `TB_SECRET`, respectively.
 
 ### Client-Side
 
