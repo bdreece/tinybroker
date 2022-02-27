@@ -19,7 +19,7 @@ A simple message broker, written in Go
 
 ## Overview
 
-tinybroker is a message broker, which implements the pub/sub model, written in Go. Clients can interact with the broker's REST API using standard CRUD conventions on the "/{topic}" endpoints. Authentication is performed via JSON web tokens. Messages published to the broker are stored in memory using asynchronous channels.
+tinybroker is a message broker, which implements the pub/sub model, written in Go. Clients can interact with the broker's REST API using standard CRUD conventions on the "/{topic}" endpoints. Authentication is performed via JSON web tokens. Messages published to the broker are stored in memory using ring buffers.
 
 ---
 
