@@ -1,16 +1,18 @@
 package main
 
 import (
-	"context"
-	"errors"
-	"flag"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"time"
+  "context"
+  "errors"
+  "flag"
+  "log"
+  "net/http"
+  "os"
+  "os/signal"
+  "time"
 
-	"github.com/gorilla/mux"
+  "github.com/gorilla/mux"
+  "github.com/bdreece/tinybroker/handler"
+  "github.com/bdreece/tinybroker/middleware"
 )
 
 func getEnvironmentVars(verbose bool) (string, string, string, error) {
@@ -40,9 +42,9 @@ func configureServer(addr string, verbose bool, writeTimeout, readTimeout time.D
   // Configure router and server
   router := mux.NewRouter()
   
-  handler := NewHandler(capacity, verbose)
+  handler := handler.NewHandler(capacity, verbose)
 
-  authMw := NewMiddleware(username, password, secret, verbose) 
+  authMw := middleware.NewMiddleware(username, password, secret, verbose) 
 
   router.Handle("/login", authMw).
          Methods("POST")
