@@ -12,4 +12,4 @@ ENV TB_USER "user"
 ENV TB_PASS "pass"
 ENV TB_SECRET "mySecret"
 
-CMD [ "tinybroker", "-v", "-a", ":8080" ]
+CMD [ "tinybroker", "-vv", "-a", ":8080", "-e", "/" ]

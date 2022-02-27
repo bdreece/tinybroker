@@ -1,4 +1,4 @@
-package middleware
+package main
 
 import (
 	"errors"
@@ -11,13 +11,13 @@ import (
 )
 
 type Middleware struct {
-	User    string
-	Pass    string
-	Secret  string
-	Verbose bool
+	User    *string
+	Pass    *string
+	Secret  *string
+	Verbose *int
 }
 
-func NewMiddleware(username, password, secret string, verbose bool) Middleware {
+func NewMiddleware(username, password, secret *string, verbose *int) Middleware {
 	return Middleware{
 		User:    username,
 		Pass:    password,
@@ -27,22 +27,22 @@ func NewMiddleware(username, password, secret string, verbose bool) Middleware {
 }
 
 func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if m.Verbose {
+	if *m.Verbose > 1 {
 		log.Printf("[LOG] User from %v attempting to login\n", r.UserAgent())
 	}
 
 	user := r.PostFormValue("TB_USER")
 	pass := r.PostFormValue("TB_PASS")
 
-	if user != m.User || pass != m.Pass {
-		if m.Verbose {
+	if user != *m.User || pass != *m.Pass {
+		if *m.Verbose > 1 {
 			log.Println("[LOG] Username or password incorrect!")
 		}
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	if m.Verbose {
+	if *m.Verbose > 1 {
 		log.Printf("[LOG] User %s logged in!\n", user)
 	}
 
@@ -53,11 +53,9 @@ func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	ss, err := token.SignedString([]byte(m.Secret))
+	ss, err := token.SignedString([]byte(*m.Secret))
 	if err != nil {
-		if m.Verbose {
-			log.Printf("[ERR] Error creating JWT: %s\n", err.Error())
-		}
+	    log.Printf("[ERR] Error creating JWT: %s\n", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
@@ -72,7 +70,7 @@ func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
 		// Parse authorization header
 		_, err := fmt.Sscanf(r.Header.Get("Authorization"), "Bearer %v", &tokenString)
 		if err != nil {
-			if m.Verbose {
+			if *m.Verbose > 1 {
 				log.Printf("[ERR] Error parsing authorization header: %s\n", err.Error())
 			}
 			w.WriteHeader(http.StatusInternalServerError)
@@ -82,18 +80,15 @@ func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
 		// Parse token
 		token, err = jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				if m.Verbose {
-					log.Println("Invalid signing method!")
-				}
 				w.WriteHeader(http.StatusUnauthorized)
 				return nil, errors.New("Invalid signing method!")
 			}
 
-			return []byte(m.Secret), nil
+			return []byte(*m.Secret), nil
 		})
 
 		if err != nil {
-			if m.Verbose {
+			if *m.Verbose > 0 {
 				log.Printf("[ERR] %v\n", err.Error())
 			}
 
@@ -103,14 +98,14 @@ func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
 
 		// Check token validity
 		if !token.Valid {
-			if m.Verbose {
+			if *m.Verbose > 0 {
 				log.Println("[LOG] Invalid token!")
 			}
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		if m.Verbose {
+		if *m.Verbose > 0 {
 			log.Println("[LOG] Successfully validated token!")
 		}
 

@@ -9,12 +9,10 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/bdreece/tinybroker/handler"
-	"github.com/bdreece/tinybroker/middleware"
 	"github.com/gorilla/mux"
 )
 
-func getEnvironmentVars(verbose bool) (string, string, string, error) {
+func getEnvironmentVars(verbose *int) (*string, *string, *string, error) {
 	var (
 		username string = os.Getenv("TB_USER")
 		password string = os.Getenv("TB_PASS")
@@ -22,16 +20,16 @@ func getEnvironmentVars(verbose bool) (string, string, string, error) {
 	)
 
 	if username == "" || password == "" || secret == "" {
-		if verbose {
+		if *verbose > 0 {
 			log.Println("[ERR] Empty environment variables!")
 		}
-		return username, password, secret, errors.New("Failed to retrieve some environment variables")
+		return &username, &password, &secret, errors.New("Failed to retrieve some environment variables")
 	}
 
-	return username, password, secret, nil
+	return &username, &password, &secret, nil
 }
 
-func configureServer(addr string, verbose bool, writeTimeout, readTimeout time.Duration, capacity int) http.Server {
+func configureServer(addr, authEndpoint *string, writeTimeout, readTimeout time.Duration, capacity, verbose *int) http.Server {
 	// Get environment variables
 	username, password, secret, err := getEnvironmentVars(verbose)
 	if err != nil {
@@ -41,11 +39,11 @@ func configureServer(addr string, verbose bool, writeTimeout, readTimeout time.D
 	// Configure router and server
 	router := mux.NewRouter()
 
-	routeHandler := handler.NewHandler(capacity, verbose)
+	routeHandler := NewHandler(capacity, verbose)
 
-	authMw := middleware.NewMiddleware(username, password, secret, verbose)
+	authMw := NewMiddleware(username, password, secret, verbose)
 
-	router.Handle("/login", authMw).
+	router.Handle(*authEndpoint, authMw).
 		Methods("POST")
 
 	router.Handle("/{topic}", authMw.AuthMiddleware(routeHandler)).
@@ -53,7 +51,7 @@ func configureServer(addr string, verbose bool, writeTimeout, readTimeout time.D
 
 	return http.Server{
 		Handler:      router,
-		Addr:         addr,
+		Addr:         *addr,
 		WriteTimeout: writeTimeout,
 		ReadTimeout:  readTimeout,
 	}

@@ -2,53 +2,116 @@ package main
 
 import (
 	"context"
-	"flag"
+	"errors"
+    "fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/akamensky/argparse"
 )
+
+func validateAuthEndpoint(args []string) error {
+    if !strings.HasPrefix(args[0], "/") {
+      return errors.New("Invalid endpoint string, must begin with '/'")
+    }
+
+    if strings.Contains(args[0], "?") {
+      return errors.New("Invalid endpoint string, cannot contain '?'")
+    }
+
+    return nil
+}
 
 func main() {
 	var (
-		addr         string
-		verbose      bool
-		capacity     int
-		writeTimeout int64
-		readTimeout  int64
-		killTimeout  int64
+		addr              *string
+        authEndpoint      *string
+		verbose           *int
+		topicCapacity     *int
+		writeTimeout      *int
+		readTimeout       *int
+		killTimeout       *int
 	)
 
 	// Parse command-line flags
-	flag.BoolVar(&verbose, "v", false, "Enable verbose output")
-	flag.IntVar(&capacity, "c", 32, "Topic queue capacity")
-	flag.Int64Var(&writeTimeout, "w", 5, "HTTP write timeout (in seconds)")
-	flag.Int64Var(&readTimeout, "r", 5, "HTTP read timeout (in seconds)")
-	flag.Int64Var(&killTimeout, "k", 5, "Server kill timeout (in seconds)")
-	flag.StringVar(&addr, "a", "127.0.0.1:8080", "Listening address and port")
-	flag.Parse()
+    parser := argparse.NewParser("tinybroker", "A simple message broker, written in Go")
 
-	if verbose {
+    addr = parser.String("a", "address", &argparse.Options{
+      Required: false, 
+      Help: "Address to serve broker on (address:port)",
+      Default: ":8080",
+    })
+
+    authEndpoint = parser.String("e", "auth-endpoint", &argparse.Options{
+      Required: false,
+      Validate: validateAuthEndpoint,
+      Help: "API endpoint for JWT authentication",
+      Default: "/login",
+    })
+
+    verbose = parser.FlagCounter("v", "verbose", &argparse.Options{
+      Required: false,
+      Help: "Enable verbose output",
+      Default: 0,
+    })
+
+    topicCapacity = parser.Int("c", "topic-capacity", &argparse.Options{
+      Required: false,
+      Help: "Topic backlog capacity",
+      Default: 32,
+    })
+
+    writeTimeout = parser.Int("w", "write-timeout", &argparse.Options{
+      Required: false,
+      Help: "HTTP server write timeout (seconds)",
+      Default: 5,
+    })
+
+    readTimeout = parser.Int("r", "read-timeout", &argparse.Options{
+      Required: false,
+      Help: "HTTP server read timeout (seconds)",
+      Default: 5,
+    })
+
+    killTimeout = parser.Int("k", "kill-timeout", &argparse.Options{
+      Required: false,
+      Help: "HTTP server kill signal timeout (seconds)",
+      Default: 5,
+    })
+
+    err := parser.Parse(os.Args)
+    if err != nil {
+      fmt.Print(parser.Usage(err))
+      os.Exit(1)
+    }
+
+	if *verbose > 0 {
 		log.Println("[LOG] Starting tinybroker")
 		log.Println("[LOG] Configuring router URL handler")
 	}
 
-	srv := configureServer(addr, verbose, time.Duration(writeTimeout)*time.Second, time.Duration(readTimeout)*time.Second, capacity)
+	srv := configureServer(addr, authEndpoint, 
+        time.Duration(int64(*writeTimeout)) * time.Second, 
+        time.Duration(int64(*readTimeout)) * time.Second, 
+        topicCapacity, verbose)
 
-	if verbose {
+	if *verbose > 0 {
 		log.Println("[LOG] Starting server")
 	}
 
 	launchServer(&srv)
 
-	if verbose {
+	if *verbose > 0 {
 		log.Println("[LOG] Shutdown signal received")
 	}
 
 	// Shutdown timeout
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(killTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*killTimeout)*time.Second)
 	defer cancel()
 
-	if verbose {
+	if *verbose > 0 {
 		log.Println("[LOG] Starting shutdown procedure")
 	}
 
