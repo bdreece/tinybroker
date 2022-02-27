@@ -1,3 +1,7 @@
+github.com/bdreece/tinybroker/handler v0.0.0-20220217142748-75ae9049517c h1:xQIzZa1tZlbqLoxT86eTOUzf8mldqrzUbAjM1ajtscI=
+github.com/bdreece/tinybroker/handler v0.0.0-20220217142748-75ae9049517c/go.mod h1:psXH70wT4/J4ig8TGFZ7n2M9ac3UwDkkSdFY+iXXJ/4=
+github.com/bdreece/tinybroker/middleware v0.0.0-20220227152234-9f3a82e00ff9 h1:qjThzKrp1zOQvqpeHrZYi0FtMLh5nN5s1HQz0rYCuMc=
+github.com/bdreece/tinybroker/middleware v0.0.0-20220227152234-9f3a82e00ff9/go.mod h1:FPOVIZxHujdbaU2GOkF31fB9hNihzgzxKQpPGFCaw3w=
 github.com/cespare/xxhash/v2 v2.1.2 h1:YRXhKfTDauu4ajMg1TPgFO5jnlC2HCbmLXMcTG5cbYE=
 github.com/cespare/xxhash/v2 v2.1.2/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

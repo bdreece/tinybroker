@@ -1,11 +1,10 @@
-package handler
+package github.com/bdreece/tinybroker/handler
 
 import (
   "log"
   "net/http"
   "github.com/gorilla/mux"
 )
-
 
 type Handler struct {
   Topics    map[string] chan string
