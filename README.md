@@ -13,6 +13,7 @@ A simple message broker, written in Go
   - [Downloading and Installing](#downloading-and-installing)
   - [Running](#running)
 - [Usage](#usage)
+  - [Client-Side](#client-side)
 - [Future Plans](#future-plans)
 
 ---
