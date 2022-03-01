@@ -44,22 +44,24 @@ Once you've installed tinybroker, the executable should be in your `$GOPATH/bin`
 The command-line usage of tinybroker is as follows:
 
 ```
-usage: tinybroker [-h|--help] [-a|--address "<value>"] [-p|--endpoint-prefix
-                  "<value>"] [-l|--login-endpoint "<value>"] [-v|--verbose
-                  <integer>] [-t|--topic-capacity <integer>] [-k|--key-file
-                  "<value>"] [-c|--cert-file "<value>"] [-j|--jwt-timeout
-                  <integer>] [-w|--write-timeout <integer>] [-r|--read-timeout
-                  <integer>] [-s|--shutdown-timeout <integer>]
+usage: tinybroker [-h|--help] [-v|--version] [-V|--verbose <integer>]
+                  [-a|--address "<value>"] [-p|--endpoint-prefix "<value>"]
+                  [-l|--login-endpoint "<value>"] [-t|--topic-capacity
+                  <integer>] [-k|--key-file "<value>"] [-c|--cert-file
+                  "<value>"] [-j|--jwt-timeout <integer>] [-w|--write-timeout
+                  <integer>] [-r|--read-timeout <integer>]
+                  [-s|--shutdown-timeout <integer>]
 
                   A simple message broker, written in Go
 
 Arguments:
 
   -h  --help              Print help information
+  -v  --version           Display version information and exit. Default: false
+  -V  --verbose           Enable verbose output. Default: 0
   -a  --address           Address over which broker is served. Default: :8080
   -p  --endpoint-prefix   Prefix for login and topic endpoints. Default: /tb
   -l  --login-endpoint    API endpoint for JWT authentication. Default: /login
-  -v  --verbose           Enable verbose output. Default: 0
   -t  --topic-capacity    Topic backlog capacity. Default: 32
   -k  --key-file          TLS key file. Default:
   -c  --cert-file         TLS cert file. Default:
