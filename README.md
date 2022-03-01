@@ -44,24 +44,29 @@ Once you've installed tinybroker, the executable should be in your `$GOPATH/bin`
 The command-line usage of tinybroker is as follows:
 
 ```
-usage: tinybroker [-h|--help] [-a|--address "<value>"] [-e|--auth-endpoint
-                  "<value>"] [-v|--verbose <integer>] [-c|--topic-capacity
+usage: tinybroker [-h|--help] [-a|--address "<value>"] [-p|--endpoint-prefix
+                  "<value>"] [-l|--login-endpoint "<value>"] [-v|--verbose
+                  <integer>] [-t|--topic-capacity <integer>] [-k|--key-file
+                  "<value>"] [-c|--cert-file "<value>"] [-j|--jwt-timeout
                   <integer>] [-w|--write-timeout <integer>] [-r|--read-timeout
-                  <integer>] [-k|--kill-timeout <integer>]
+                  <integer>] [-s|--shutdown-timeout <integer>]
 
                   A simple message broker, written in Go
 
 Arguments:
 
-  -h  --help            Print help information
-  -a  --address         Address to serve broker on (address:port). Default:
-                        :8080
-  -e  --auth-endpoint   API endpoint for JWT authentication. Default: /login
-  -v  --verbose         Enable verbose output. Default: 0
-  -c  --topic-capacity  Topic backlog capacity. Default: 32
-  -w  --write-timeout   HTTP server write timeout (seconds). Default: 5
-  -r  --read-timeout    HTTP server read timeout (seconds). Default: 5
-  -k  --kill-timeout    HTTP server kill signal timeout (seconds). Default: 5
+  -h  --help              Print help information
+  -a  --address           Address over which broker is served. Default: :8080
+  -p  --endpoint-prefix   Prefix for login and topic endpoints. Default: /tb
+  -l  --login-endpoint    API endpoint for JWT authentication. Default: /login
+  -v  --verbose           Enable verbose output. Default: 0
+  -t  --topic-capacity    Topic backlog capacity. Default: 32
+  -k  --key-file          TLS key file. Default:
+  -c  --cert-file         TLS cert file. Default:
+  -j  --jwt-timeout       JWT lifetime duration (seconds). Default: 3600
+  -w  --write-timeout     HTTP server write timeout (seconds). Default: 5
+  -r  --read-timeout      HTTP server read timeout (seconds). Default: 5
+  -s  --shutdown-timeout  HTTP server kill signal timeout (seconds). Default: 5
 ```
 
 Additional parameters (i.e. username, password, JWT HMAC secret) may be passed in as environment variables named `TB_USER`, `TB_PASS`, and `TB_SECRET`, respectively.
