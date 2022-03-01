@@ -1,7 +1,7 @@
 # tinybroker
 
-![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/bdreece/tinybroker?include_prereleases)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/bdreece/tinybroker/Go)
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/bdreece/tinybroker?include_prereleases)](https://github.com/bdreece/tinybroker/releases)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/bdreece/tinybroker/Go)](https://github.com/bdreece/tinybroker/actions/workflows/go.yml)
 ![Lines of code](https://img.shields.io/tokei/lines/github/bdreece/tinybroker)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/bdreece/tinybroker)
 
