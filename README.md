@@ -78,7 +78,7 @@ Arguments:
   -s  --shutdown-timeout  HTTP server kill signal timeout (seconds). Default: 5
 ```
 
-Additional parameters (i.e. username, password, JWT HMAC secret) may be passed in as environment variables named `TB_USER`, `TB_PASS`, and `TB_SECRET`, respectively.
+Additional parameters (i.e. username, password, JWT HMAC secret) must be passed in as environment variables named `TB_USER`, `TB_PASS`, and `TB_SECRET`, respectively, otherwise a runtime error will occur.
 
 ### Client-Side
 
