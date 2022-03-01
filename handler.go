@@ -123,6 +123,7 @@ func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic st
 			log.Println("[LOG] Data not found!")
 		}
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	if *h.Verbose > 1 {

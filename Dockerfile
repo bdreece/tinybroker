@@ -8,8 +8,10 @@ RUN go mod download && go mod verify
 COPY . .
 RUN go build -v -o /usr/local/bin/tinybroker
 
-ENV TB_USER "user"
-ENV TB_PASS "pass"
-ENV TB_SECRET "mySecret"
+ENV TB_USER "YOUR_USERNAME"
+ENV TB_PASS "YOUR_PASSWORD"
+ENV TB_SECRET "YOUR_SECRET"
 
-CMD [ "tinybroker", "-vv", "-a", ":8080", "-e", "/" ]
+EXPOSE 8080
+
+CMD [ "tinybroker", "-vv" ]

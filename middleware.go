@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"log"
@@ -11,18 +12,24 @@ import (
 )
 
 type Middleware struct {
-	User    *string
-	Pass    *string
-	Secret  *string
-	Verbose *int
+	User       *string
+	Pass       string
+	Secret     *string
+	JWTTimeout *time.Duration
+	Verbose    *int
 }
 
-func NewMiddleware(username, password, secret *string, verbose *int) Middleware {
+func NewMiddleware(username, password, secret *string, jwtTimeout *time.Duration, verbose *int) Middleware {
+	h := sha256.New()
+	h.Write([]byte(*password))
+	hashPW := h.Sum(nil)
+
 	return Middleware{
-		User:    username,
-		Pass:    password,
-		Secret:  secret,
-		Verbose: verbose,
+		User:       username,
+		Pass:       fmt.Sprintf("%x", hashPW),
+		Secret:     secret,
+		JWTTimeout: jwtTimeout,
+		Verbose:    verbose,
 	}
 }
 
@@ -34,7 +41,7 @@ func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	user := r.PostFormValue("TB_USER")
 	pass := r.PostFormValue("TB_PASS")
 
-	if user != *m.User || pass != *m.Pass {
+	if user != *m.User || pass != m.Pass {
 		if *m.Verbose > 1 {
 			log.Println("[LOG] Username or password incorrect!")
 		}
@@ -48,7 +55,7 @@ func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Create JWT
 	claims := &jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(*m.JWTTimeout)),
 		Issuer:    user,
 	}
 
@@ -89,10 +96,10 @@ func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
 
 		if err != nil {
 			if *m.Verbose > 0 {
-				log.Printf("[ERR] %v\n", err.Error())
+				log.Printf("[LOG] Error parsing token: %v\n", err.Error())
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
