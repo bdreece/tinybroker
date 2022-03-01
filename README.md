@@ -20,7 +20,7 @@ A simple message broker, written in Go
 
 ## Overview
 
-tinybroker is a message broker, which implements the pub/sub model, written in Go. Clients can interact with the broker's REST API using standard CRUD conventions on the "/{topic}" endpoints. Authentication is performed via JSON web tokens. Messages published to the broker are stored in memory using ring buffers.
+tinybroker is a message broker that implements the pub/sub model, written in Go. Clients can interact with the broker's REST API using standard CRUD conventions on "/{topic}" endpoints. Authentication is performed via JSON web tokens
 
 ---
 
@@ -34,9 +34,15 @@ Downloading tinybroker is as simple as:
 $ go install github.com/bdreece/tinybroker@latest
 ```
 
+tinybroker is also published to Docker Hub. Pull the tinybroker image via:
+
+```console
+$ docker pull bdreece/tinybroker:latest
+```
+
 ### Running
 
-Once you've installed tinybroker, the executable should be in your `$GOPATH/bin` directory. This can be executed as `tinybroker`, assuming you've configured go correctly.
+Once you've installed tinybroker, the executable should be in your `$GOPATH/bin` directory. This can be executed as `tinybroker`, assuming you've configured go correctly. If you've pulled the Docker image, you can spin up a container using the `docker run` command.
 
 ---
 
@@ -87,7 +93,7 @@ Furthermore, data may be passed along to the broker using the multipart form con
 
 In order to help illustrate proper broker requests, I've added the following valid `curl` commands for a local tinybroker instance (given the `TB_USER` and `TB_PASS` environment variables have been set to 'user' and 'pass', respectively):
 
-- Request:  `curl -F "TB_USER=user" -F "TB_PASS=pass" localhost:8080/login`
+- Request:  `curl -F "TB_USER=user" -F "TB_PASS=$(echo -n 'pass' | openssl dgst -sha256 | cut -d' ' -f2)" localhost:8080/login`
 - Response: `<YOUR_JWT_HERE>`
 - Request:  `curl --oauth2-bearer "<YOUR_JWT_HERE>" -F "TB_DATA=apple" localhost:8080/fruits`
 - Request:  `curl --oauth2-bearer "<YOUR_JWT_HERE>" -F "TB_DATA=orange" localhost:8080/fruits`
