@@ -95,10 +95,6 @@ In order to help illustrate proper broker requests, I've added the following val
 - Request:  `curl --oauth2-bearer "<YOUR_JWT_HERE>" localhost:8080/fruits`
 - Response: `orange`
 
-### Insomnia Demo
-
-![Insomnia Demo GIF](./insomnia-demo.gif)
-
 ---
 
 ## Future Plans
