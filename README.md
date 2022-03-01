@@ -79,7 +79,7 @@ Arguments:
   -s  --shutdown-timeout  HTTP server kill signal timeout (seconds). Default: 5
 ```
 
-Additional parameters (i.e. username, password, JWT HMAC secret) may be passed in as environment variables named `TB_USER`, `TB_PASS`, and `TB_SECRET`, respectively.
+Additional parameters (i.e. username, password, JWT HMAC secret) must be passed in as environment variables named `TB_USER`, `TB_PASS`, and `TB_SECRET`, respectively, otherwise a runtime error will occur.
 
 ### Client-Side
 
@@ -90,7 +90,7 @@ tinybroker exposes its API over HTTP, utilizing standard CRUD conventions for re
 - Update topic 'fruits': `PUT /fruits`
 - Delete topic 'fruits': `DELETE /fruits`
 
-Furthermore, data may be passed along to the broker using the multipart form content type under the key: `TB_DATA`. Likewise, login information can be passed to the specified authentication endpoint (default: `/login`) using the multipart form with keys `TB_USER` and `TB_PASS`. Note, the TB_PASS environment variable should be a hashed string using the SHA-256 hash algorithm.
+Furthermore, data may be passed along to the broker using the multipart form content type under the key: `TB_DATA`. Likewise, login information can be passed to the specified authentication endpoint (default: `/login`) using the multipart form with keys `TB_USER` and `TB_PASS`. Note, the `TB_PASS` environment variable should be a hashed string using the SHA-256 hash algorithm.
 
 In order to help illustrate proper broker requests, I've added the following valid `curl` commands for a local tinybroker instance (given the `TB_USER` and `TB_PASS` environment variables have been set to 'user' and 'pass', respectively):
 
