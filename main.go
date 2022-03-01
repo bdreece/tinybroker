@@ -12,6 +12,8 @@ import (
 	"github.com/akamensky/argparse"
 )
 
+const VERSION_MESSAGE string = "tinybroker v0.2-alpha"
+
 func validateEndpoint(args []string) error {
 	if !strings.HasPrefix(args[0], "/") {
 		return errors.New("Invalid endpoint string, must begin with '/'")
@@ -24,6 +26,7 @@ func validateEndpoint(args []string) error {
 
 func main() {
 	var (
+		version         *bool
 		addr            *string
 		loginEndpoint   *string
 		endpointPrefix  *string
@@ -39,6 +42,18 @@ func main() {
 
 	// Parse command-line flags
 	parser := argparse.NewParser("tinybroker", "A simple message broker, written in Go")
+
+	version = parser.Flag("v", "version", &argparse.Options{
+		Required: false,
+		Help:     "Display version information and exit",
+		Default:  false,
+	})
+
+	verbose = parser.FlagCounter("V", "verbose", &argparse.Options{
+		Required: false,
+		Help:     "Enable verbose output",
+		Default:  0,
+	})
 
 	addr = parser.String("a", "address", &argparse.Options{
 		Required: false,
@@ -58,12 +73,6 @@ func main() {
 		Validate: validateEndpoint,
 		Help:     "API endpoint for JWT authentication",
 		Default:  "/login",
-	})
-
-	verbose = parser.FlagCounter("v", "verbose", &argparse.Options{
-		Required: false,
-		Help:     "Enable verbose output",
-		Default:  0,
 	})
 
 	topicCapacity = parser.Int("t", "topic-capacity", &argparse.Options{
@@ -112,6 +121,11 @@ func main() {
 	if err != nil {
 		fmt.Print(parser.Usage(err))
 		os.Exit(1)
+	}
+
+	if *version {
+		fmt.Println(VERSION_MESSAGE)
+		os.Exit(0)
 	}
 
 	if *verbose > 0 {

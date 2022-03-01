@@ -14,4 +14,4 @@ ENV TB_SECRET "YOUR_SECRET"
 
 EXPOSE 8080
 
-CMD [ "tinybroker", "-vv" ]
+CMD [ "tinybroker", "-VV" ]
