@@ -20,7 +20,7 @@ jobs:
     - name: Login to Docker Hub
       env:
         PASSWORD: "${{ secrets.DOCKERHUB_PASSWORD }}"
-      run: docker login "docker.io" -u bdreece -p "${{ env.PASSWORD }}"
+      run: echo "${{ env.PASSWORD }}" | docker login "docker.io" -u bdreece --password-stdin
       
     - name: Push to Docker Hub
       run: docker push "bdreece/tinybroker"
