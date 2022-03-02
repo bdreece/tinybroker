@@ -1,9 +1,9 @@
 # tinybroker
 
 [![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/bdreece/tinybroker?include_prereleases)](https://github.com/bdreece/tinybroker/releases)
+[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/bdreece/tinybroker)](https://hub.docker.com/r/bdreece/tinybroker)
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/bdreece/tinybroker/Go)](https://github.com/bdreece/tinybroker/actions/workflows/go.yml)
 ![Lines of code](https://img.shields.io/tokei/lines/github/bdreece/tinybroker)
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/bdreece/tinybroker)
 
 A simple message broker, written in Go
 
