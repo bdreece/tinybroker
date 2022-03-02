@@ -1,0 +1,26 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag bdreece/tinybroker
+      
+    - name: Login to Docker Hub
+      env:
+        PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+      run: echo "${{ env.PASSWORD }}" | docker login "docker.io" -u bdreece --password-stdin
+      
+    - name: Push to Docker Hub
+      run: docker push "bdreece/tinybroker"
