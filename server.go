@@ -21,16 +21,16 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/bdreece/tattle"
 	"github.com/gorilla/mux"
 )
 
-func getEnvironmentVars(verbose *int) (*string, *string, *string, error) {
+func getEnvironmentVars(verbose *int, logger *tattle.Logger) (*string, *string, *string, error) {
 	var (
 		username string = os.Getenv("TB_USER")
 		password string = os.Getenv("TB_PASS")
@@ -39,42 +39,45 @@ func getEnvironmentVars(verbose *int) (*string, *string, *string, error) {
 
 	if username == "" || password == "" || secret == "" {
 		if *verbose > 0 {
-			log.Println("[ERR] Empty environment variables!")
+			logger.Errln("Empty environment variables!")
 		}
-		return &username, &password, &secret, errors.New("Failed to retrieve some environment variables")
+		return &username, &password, &secret, errors.New("failed to retrieve some environment variables")
 	}
 
 	return &username, &password, &secret, nil
 }
 
-func configureServer(addr, authEndpoint, endpointPrefix *string,
+func configureServer(addr, authPrefix, endpointPrefix *string,
 	jwtTimeout, writeTimeout, readTimeout time.Duration,
-	capacity, verbose *int) http.Server {
+	capacity, verbose *int, logger *tattle.Logger) http.Server {
 
 	// Get environment variables
-	username, password, secret, err := getEnvironmentVars(verbose)
+	username, password, secret, err := getEnvironmentVars(verbose, logger)
 	if err != nil {
 		if *verbose > 1 {
-			log.Printf("[ERR] TB_USER: %s\n", *username)
-			log.Printf("[ERR] TB_PASS: %s\n", *password)
-			log.Printf("[ERR] TB_SECRET: %s\n", *secret)
+			logger.Errf("TB_USER: %s\n", *username)
+			logger.Errf("TB_PASS: %s\n", *password)
+			logger.Errf("TB_SECRET: %s\n", *secret)
 		}
-		log.Fatalf("[ERR] %v\n", err.Error())
+		logger.Errf("%v\n", err.Error())
+		os.Exit(1)
 	}
 
 	// Configure router and server
 	router := mux.NewRouter()
-	routeHandler := NewHandler(capacity, verbose)
-	mw := NewMiddleware(username, password, secret, &jwtTimeout, verbose)
+	routeHandler := NewHandler(capacity, verbose, logger)
+	mw := NewMiddleware(username, password, secret, &jwtTimeout, verbose, logger)
 
-	router.Handle(*endpointPrefix+*authEndpoint, mw).
+	// Login endpoint
+	router.Handle(*endpointPrefix+*authPrefix, mw).
 		Methods("POST")
 
+	// Topic endpoints
 	router.Handle(*endpointPrefix+"/{topic}", mw.AuthMiddleware(routeHandler)).
 		Methods("POST", "GET", "PUT", "DELETE")
 
 	if *verbose > 1 {
-		log.Printf("[LOG] Configured server for address: %s\n", *addr)
+		logger.Logf("Configured server for address: %s\n", *addr)
 	}
 
 	return http.Server{
@@ -85,11 +88,12 @@ func configureServer(addr, authEndpoint, endpointPrefix *string,
 	}
 }
 
-func launchHTTPServer(srv *http.Server) {
+func launchHTTPServer(srv *http.Server, logger *tattle.Logger) {
 	// Launch server asynchronously
 	go func() {
 		if err := srv.ListenAndServe(); err != nil {
-			log.Fatalf("[ERR] %v\n", err.Error())
+			logger.Errf("%v\n", err.Error())
+			os.Exit(1)
 		}
 	}()
 
@@ -101,11 +105,11 @@ func launchHTTPServer(srv *http.Server) {
 	<-c
 }
 
-func launchHTTPSServer(srv *http.Server, certFile, keyFile *string) {
+func launchHTTPSServer(srv *http.Server, certFile, keyFile *string, logger *tattle.Logger) {
 	// Launch server asynchronously
 	go func() {
 		if err := srv.ListenAndServeTLS(*certFile, *keyFile); err != nil {
-			log.Fatalf("[ERR] %v\n", err.Error())
+			logger.Errf("%v\n", err.Error())
 		}
 	}()
 

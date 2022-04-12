@@ -20,13 +20,16 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"io"
 	"net/http"
 	"time"
 
+	"github.com/bdreece/tattle"
 	jwt "github.com/golang-jwt/jwt/v4"
+	"github.com/gorilla/mux"
 )
 
 type Middleware struct {
@@ -35,9 +38,10 @@ type Middleware struct {
 	Secret     *string
 	JWTTimeout *time.Duration
 	Verbose    *int
+	Logger 	   *tattle.Logger
 }
 
-func NewMiddleware(username, password, secret *string, jwtTimeout *time.Duration, verbose *int) Middleware {
+func NewMiddleware(username, password, secret *string, jwtTimeout *time.Duration, verbose *int, logger *tattle.Logger) Middleware {
 	h := sha256.New()
 	h.Write([]byte(*password))
 	hashPW := h.Sum(nil)
@@ -48,39 +52,104 @@ func NewMiddleware(username, password, secret *string, jwtTimeout *time.Duration
 		Secret:     secret,
 		JWTTimeout: jwtTimeout,
 		Verbose:    verbose,
+		Logger: 	logger,
 	}
 }
 
-func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if *m.Verbose > 1 {
-		log.Printf("[LOG] User from %v attempting to login\n", r.UserAgent())
+func (m *Middleware) verifyAuthRequest(body *map[string]interface{}) bool {
+	var (
+		user string
+		pass string
+		ok   bool
+	)
+
+	if user, ok = (*body)["username"].(string); !ok {
+		if *m.Verbose > 1 {
+			m.Logger.Logln("Request body missing 'username' field!")
+		}
+		return false
 	}
 
-	user := r.PostFormValue("TB_USER")
-	pass := r.PostFormValue("TB_PASS")
-
+	if pass, ok = (*body)["username"].(string); !ok {
+		if *m.Verbose > 1 {
+			m.Logger.Logln("Request body missing 'password' field!")
+		}
+		return false
+	}
 	if user != *m.User || pass != m.Pass {
 		if *m.Verbose > 1 {
-			log.Println("[LOG] Username or password incorrect!")
+			m.Logger.Logln("Username or password incorrect!")
 		}
-		w.WriteHeader(http.StatusUnauthorized)
-		return
+		return false
 	}
+	return true
+}
+
+func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var (
+		data   []byte
+		topics []string
+		ok     bool
+	)
 
 	if *m.Verbose > 1 {
-		log.Printf("[LOG] User %s logged in!\n", user)
+		m.Logger.Logln("No 'username' field in request body")
+	}
+
+	// Read request body
+	body := make(map[string]interface{})
+	buf := make([]byte, 1024)
+	for {
+		n, err := r.Body.Read(buf)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			m.Logger.Errf("Error reading request body: %s\n", err.Error())
+			continue
+		}
+		if n > 0 {
+			data = append(data, buf...)
+		}
+	}
+
+	// Unmarshal data
+	if err := json.Unmarshal(data, &body); err != nil {
+		m.Logger.Errf("Error unmarshaling request body: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	// Verify authentication info
+	if !m.verifyAuthRequest(&body) {
+		if *m.Verbose > 0 {
+			m.Logger.Logln("User failed to log in")
+		}
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	if *m.Verbose > 0 {
+		m.Logger.Logf("User %s logged in!\n", *m.User)
+	}
+
+	// Check for topics in request body
+	if topics, ok = body["topics"].([]string); !ok {
+		if *m.Verbose > 0 {
+			m.Logger.Logln("No topics listed!")
+		}
+		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	// Create JWT
 	claims := &jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(*m.JWTTimeout)),
-		Issuer:    user,
+		Issuer:    *m.User,
+		Audience:  topics,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	ss, err := token.SignedString([]byte(*m.Secret))
 	if err != nil {
-		log.Printf("[ERR] Error creating JWT: %s\n", err.Error())
+		m.Logger.Errf("Error creating JWT: %s\n", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
@@ -96,17 +165,32 @@ func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
 		_, err := fmt.Sscanf(r.Header.Get("Authorization"), "Bearer %v", &tokenString)
 		if err != nil {
 			if *m.Verbose > 1 {
-				log.Printf("[ERR] Error parsing authorization header: %s\n", err.Error())
+				m.Logger.Errf("Error parsing authorization header: %s\n", err.Error())
 			}
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
+		topic := mux.Vars(r)["topic"]
+
 		// Parse token
 		token, err = jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			var (
+				claims jwt.RegisteredClaims
+				ok     bool
+			)
+
+			if _, ok = token.Method.(*jwt.SigningMethodHMAC); !ok {
 				w.WriteHeader(http.StatusUnauthorized)
-				return nil, errors.New("Invalid signing method!")
+				return nil, errors.New("invalid signing method")
+			}
+
+			if claims, ok = token.Claims.(jwt.RegisteredClaims); !ok {
+				return nil, errors.New("invalid claims type")
+			}
+
+			if !claims.VerifyAudience(topic, true) {
+				return nil, errors.New("invalid audience")
 			}
 
 			return []byte(*m.Secret), nil
@@ -114,7 +198,7 @@ func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
 
 		if err != nil {
 			if *m.Verbose > 0 {
-				log.Printf("[LOG] Error parsing token: %v\n", err.Error())
+				m.Logger.Logf("Error parsing token: %s\n", err.Error())
 			}
 
 			w.WriteHeader(http.StatusUnauthorized)
@@ -124,14 +208,14 @@ func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
 		// Check token validity
 		if !token.Valid {
 			if *m.Verbose > 0 {
-				log.Println("[LOG] Invalid token!")
+				m.Logger.Logln("Invalid token!")
 			}
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
 		if *m.Verbose > 0 {
-			log.Println("[LOG] Successfully validated token!")
+			m.Logger.Logln("Successfully validated token!")
 		}
 
 		next.ServeHTTP(w, r)

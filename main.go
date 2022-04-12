@@ -22,114 +22,114 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/akamensky/argparse"
+	"github.com/bdreece/tattle"
 )
+
+type Args struct {
+	Version         *bool
+	Addr            *string
+	LoginEndpoint   *string
+	EndpointPrefix  *string
+	KeyFile         *string
+	CertFile        *string
+	Verbose         *int
+	TopicCapacity   *int
+	JwtTimeout      *int
+	WriteTimeout    *int
+	ReadTimeout     *int
+	ShutdownTimeout *int
+}
 
 const VERSION_MESSAGE string = "tinybroker v0.2-alpha"
 
 func validateEndpoint(args []string) error {
 	if !strings.HasPrefix(args[0], "/") {
-		return errors.New("Invalid endpoint string, must begin with '/'")
+		return errors.New("invalid endpoint string, must begin with '/'")
 	}
 	if strings.Contains(args[0], "?") {
-		return errors.New("Invalid endpoint string, cannot contain '?'")
+		return errors.New("invalid endpoint string, cannot contain '?'")
 	}
 	return nil
 }
 
-func main() {
-	var (
-		version         *bool
-		addr            *string
-		loginEndpoint   *string
-		endpointPrefix  *string
-		keyFile         *string
-		certFile        *string
-		verbose         *int
-		topicCapacity   *int
-		jwtTimeout      *int
-		writeTimeout    *int
-		readTimeout     *int
-		shutdownTimeout *int
-	)
-
+func parseArgs(args *Args) {
 	// Parse command-line flags
 	parser := argparse.NewParser("tinybroker", "A simple message broker, written in Go")
 
-	version = parser.Flag("v", "version", &argparse.Options{
+	args.Version = parser.Flag("v", "version", &argparse.Options{
 		Required: false,
 		Help:     "Display version information and exit",
 		Default:  false,
 	})
 
-	verbose = parser.FlagCounter("V", "verbose", &argparse.Options{
+	args.Verbose = parser.FlagCounter("V", "verbose", &argparse.Options{
 		Required: false,
 		Help:     "Enable verbose output",
 		Default:  0,
 	})
 
-	addr = parser.String("a", "address", &argparse.Options{
+	args.Addr = parser.String("a", "address", &argparse.Options{
 		Required: false,
 		Help:     "Address over which broker is served",
 		Default:  ":8080",
 	})
 
-	endpointPrefix = parser.String("p", "endpoint-prefix", &argparse.Options{
+	args.EndpointPrefix = parser.String("p", "endpoint-prefix", &argparse.Options{
 		Required: false,
 		Validate: validateEndpoint,
 		Help:     "Prefix for login and topic endpoints",
 		Default:  "/tb",
 	})
 
-	loginEndpoint = parser.String("l", "login-endpoint", &argparse.Options{
+	args.LoginEndpoint = parser.String("l", "login-endpoint", &argparse.Options{
 		Required: false,
 		Validate: validateEndpoint,
 		Help:     "API endpoint for JWT authentication",
 		Default:  "/login",
 	})
 
-	topicCapacity = parser.Int("t", "topic-capacity", &argparse.Options{
+	args.TopicCapacity = parser.Int("t", "topic-capacity", &argparse.Options{
 		Required: false,
 		Help:     "Topic backlog capacity",
 		Default:  32,
 	})
 
-	keyFile = parser.String("k", "key-file", &argparse.Options{
+	args.KeyFile = parser.String("k", "key-file", &argparse.Options{
 		Required: false,
 		Help:     "TLS key file",
 		Default:  "",
 	})
 
-	certFile = parser.String("c", "cert-file", &argparse.Options{
+	args.CertFile = parser.String("c", "cert-file", &argparse.Options{
 		Required: false,
 		Help:     "TLS cert file",
 		Default:  "",
 	})
 
-	jwtTimeout = parser.Int("j", "jwt-timeout", &argparse.Options{
+	args.JwtTimeout = parser.Int("j", "jwt-timeout", &argparse.Options{
 		Required: false,
 		Help:     "JWT lifetime duration (seconds)",
 		Default:  3600,
 	})
 
-	writeTimeout = parser.Int("w", "write-timeout", &argparse.Options{
+	args.WriteTimeout = parser.Int("w", "write-timeout", &argparse.Options{
 		Required: false,
 		Help:     "HTTP server write timeout (seconds)",
 		Default:  5,
 	})
 
-	readTimeout = parser.Int("r", "read-timeout", &argparse.Options{
+	args.ReadTimeout = parser.Int("r", "read-timeout", &argparse.Options{
 		Required: false,
 		Help:     "HTTP server read timeout (seconds)",
 		Default:  5,
 	})
 
-	shutdownTimeout = parser.Int("s", "shutdown-timeout", &argparse.Options{
+	args.ShutdownTimeout = parser.Int("s", "shutdown-timeout", &argparse.Options{
 		Required: false,
 		Help:     "HTTP server kill signal timeout (seconds)",
 		Default:  5,
@@ -140,59 +140,65 @@ func main() {
 		fmt.Print(parser.Usage(err))
 		os.Exit(1)
 	}
+}
 
-	if *version {
+func main() {
+	args := new(Args)
+	logger := tattle.NewLogger("LOG", "WARN", "ERR", nil)
+	parseArgs(args)
+
+	if *args.Version {
 		fmt.Println(VERSION_MESSAGE)
 		os.Exit(0)
 	}
 
-	if *verbose > 0 {
-		log.Println("[LOG] Starting tinybroker")
-		log.Println("[LOG] Configuring router URL handler")
+	if *args.Verbose > 0 {
+		logger.Logln("Starting tinybroker")
+		logger.Logln("Configuring router URL handler")
 	}
 
-	srv := configureServer(addr, loginEndpoint, endpointPrefix,
-		time.Duration(int64(*jwtTimeout))*time.Second,
-		time.Duration(int64(*writeTimeout))*time.Second,
-		time.Duration(int64(*readTimeout))*time.Second,
-		topicCapacity, verbose)
+	srv := configureServer(args.Addr, args.LoginEndpoint, args.EndpointPrefix,
+		time.Duration(int64(*args.JwtTimeout))*time.Second,
+		time.Duration(int64(*args.WriteTimeout))*time.Second,
+		time.Duration(int64(*args.ReadTimeout))*time.Second,
+		args.TopicCapacity, args.Verbose, &logger)
 
-	if *verbose > 0 {
-		log.Println("[LOG] Starting server")
+	if *args.Verbose > 0 {
+		logger.Logln("Starting server")
 	}
 
-	if *certFile == "" || *keyFile == "" {
-		if *verbose > 1 {
-			log.Println("[LOG] Missing key file or cert file")
+	if *args.CertFile == "" || *args.KeyFile == "" {
+		if *args.Verbose > 1 {
+			logger.Logln("Missing key file or cert file")
 		}
-		if *verbose > 0 {
-			log.Println("[LOG] Launching HTTP server")
+		if *args.Verbose > 0 {
+			logger.Logln("Launching HTTP server")
 		}
-		launchHTTPServer(&srv)
+		launchHTTPServer(&srv, &logger)
 	} else {
-		if *verbose > 1 {
-			log.Println("[LOG] Found key file and cert file")
+		if *args.Verbose > 1 {
+			logger.Logln("Found key file and cert file")
 		}
-		if *verbose > 0 {
-			log.Println("[LOG] Launching HTTPS server")
+		if *args.Verbose > 0 {
+			logger.Logln("Launching HTTPS server")
 		}
-		launchHTTPSServer(&srv, certFile, keyFile)
+		launchHTTPSServer(&srv, args.CertFile, args.KeyFile, &logger)
 	}
 
-	if *verbose > 0 {
-		log.Println("[LOG] Shutdown signal received")
+	if *args.Verbose > 0 {
+		logger.Logln("Shutdown signal received")
 	}
 
 	// Shutdown timeout
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*shutdownTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*args.ShutdownTimeout)*time.Second)
 	defer cancel()
 
-	if *verbose > 0 {
-		log.Println("[LOG] Starting shutdown procedure")
+	if *args.Verbose > 0 {
+		logger.Logln("Starting shutdown procedure")
 	}
 
 	shutdownProcedure(&srv, ctx)
 
-	log.Println("[LOG] Goodbye!")
+	logger.Logln("Goodbye!")
 	os.Exit(0)
 }

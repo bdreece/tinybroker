@@ -20,23 +20,26 @@ package main
 
 import (
 	"fmt"
-	"github.com/bdreece/go-structs/ringbuf"
-	"github.com/gorilla/mux"
-	"log"
 	"net/http"
+
+	"github.com/bdreece/go-structs/ringbuf"
+	"github.com/bdreece/tattle"
+	"github.com/gorilla/mux"
 )
 
 type Handler struct {
 	Topics   map[string]*ringbuf.RingBuf
 	Capacity *int
 	Verbose  *int
+	Logger   *tattle.Logger
 }
 
-func NewHandler(capacity *int, verbose *int) Handler {
+func NewHandler(capacity *int, verbose *int, logger *tattle.Logger) Handler {
 	return Handler{
 		Topics:   make(map[string]*ringbuf.RingBuf),
 		Capacity: capacity,
 		Verbose:  verbose,
+		Logger:   logger,
 	}
 }
 
@@ -44,7 +47,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	topic := mux.Vars(r)["topic"]
 
 	if *h.Verbose > 0 {
-		log.Printf("[LOG] Serving request on topic: %s\n", topic)
+		h.Logger.Logf("Serving request on topic: %s\n", topic)
 	}
 
 	switch r.Method {
@@ -57,19 +60,19 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "DELETE":
 		h.DeleteResponse(w, r, topic)
 	default:
-		log.Printf("[ERR] Invalid request method: %s\n", r.Method)
+		h.Logger.Errf("Invalid request method: %s\n", r.Method)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if *h.Verbose > 0 {
-		log.Println("[LOG] Sent response!")
+		h.Logger.Logln("Sent response!")
 	}
 }
 
 func (h Handler) CreateResponse(w http.ResponseWriter, r *http.Request, topic string) {
 	if *h.Verbose > 1 {
-		log.Printf("[LOG] Creating topic: %s\n", topic)
+		h.Logger.Logf("Creating topic: %s\n", topic)
 	}
 
 	data := r.PostFormValue("TB_DATA")
@@ -80,7 +83,7 @@ func (h Handler) CreateResponse(w http.ResponseWriter, r *http.Request, topic st
 
 	if len(data) > 0 {
 		if *h.Verbose > 1 {
-			log.Printf("[LOG] Create request contains data: %s\n", data)
+			h.Logger.Logf("Create request contains data: %s\n", data)
 		}
 
 		h.Topics[topic].Write(data)
@@ -91,12 +94,12 @@ func (h Handler) CreateResponse(w http.ResponseWriter, r *http.Request, topic st
 
 func (h Handler) ReadResponse(w http.ResponseWriter, r *http.Request, topic string) {
 	if *h.Verbose > 1 {
-		log.Printf("[LOG] Reading from topic: %s\n", topic)
+		h.Logger.Logf("Reading from topic: %s\n", topic)
 	}
 
 	if h.Topics[topic] == nil {
 		if *h.Verbose > 1 {
-			log.Printf("[LOG] Topic %s not found!", topic)
+			h.Logger.Logf("Topic %s not found!", topic)
 		}
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -106,30 +109,30 @@ func (h Handler) ReadResponse(w http.ResponseWriter, r *http.Request, topic stri
 
 	if data == nil {
 		if *h.Verbose > 1 {
-			log.Println("[LOG] Topic contains no data")
+			h.Logger.Logln("Topic contains no data")
 		}
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
 	if *h.Verbose > 1 {
-		log.Printf("[LOG] Read data: %v\n", data)
+		h.Logger.Logf("Read data: %v\n", data)
 	}
 
 	_, err := w.Write([]byte(fmt.Sprint(data)))
 	if err != nil {
-		log.Printf("[ERR] %v\n", err.Error())
+		h.Logger.Errln(err.Error())
 	}
 }
 
 func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic string) {
 	if *h.Verbose > 1 {
-		log.Printf("[LOG] Updating topic: %s\n", topic)
+		h.Logger.Logf("Updating topic: %s\n", topic)
 	}
 
 	if h.Topics[topic] == nil {
 		if *h.Verbose > 1 {
-			log.Printf("[LOG] Topic %s not found!\n", topic)
+			h.Logger.Logf("Topic %s not found!\n", topic)
 		}
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -138,14 +141,14 @@ func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic st
 	data := r.PostFormValue("TB_DATA")
 	if len(data) < 1 {
 		if *h.Verbose > 1 {
-			log.Println("[LOG] Data not found!")
+			h.Logger.Logln("Data not found!")
 		}
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if *h.Verbose > 1 {
-		log.Printf("[LOG] Updating with data: %s\n", data)
+		h.Logger.Logf("Updating with data: %s\n", data)
 	}
 
 	h.Topics[topic].Write(data)
@@ -154,12 +157,12 @@ func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic st
 
 func (h Handler) DeleteResponse(w http.ResponseWriter, r *http.Request, topic string) {
 	if *h.Verbose > 1 {
-		log.Printf("[LOG] Deleting topic: %s\n", topic)
+		h.Logger.Logf("Deleting topic: %s\n", topic)
 	}
 
 	if h.Topics[topic] == nil {
 		if *h.Verbose > 1 {
-			log.Println("[LOG] Topic not found!")
+			h.Logger.Logf("Topic not found!")
 		}
 		w.WriteHeader(http.StatusNotFound)
 		return
