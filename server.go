@@ -32,8 +32,8 @@ import (
 
 func getEnvironmentVars(verbose *int, logger *tattle.Logger) (*string, *string, *string, error) {
 	var (
-		username string = os.Getenv("TB_USER")
-		password string = os.Getenv("TB_PASS")
+		username string = os.Getenv("TB_USERNAME")
+		password string = os.Getenv("TB_PASSWORD")
 		secret   string = os.Getenv("TB_SECRET")
 	)
 
@@ -55,8 +55,8 @@ func configureServer(addr, authPrefix, endpointPrefix *string,
 	username, password, secret, err := getEnvironmentVars(verbose, logger)
 	if err != nil {
 		if *verbose > 1 {
-			logger.Errf("TB_USER: %s\n", *username)
-			logger.Errf("TB_PASS: %s\n", *password)
+			logger.Errf("TB_USERNAME: %s\n", *username)
+			logger.Errf("TB_PASSWORD: %s\n", *password)
 			logger.Errf("TB_SECRET: %s\n", *secret)
 		}
 		logger.Errf("%v\n", err.Error())
