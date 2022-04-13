@@ -19,8 +19,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/bdreece/go-structs/ringbuf"
 	"github.com/bdreece/tattle"
@@ -28,18 +29,35 @@ import (
 )
 
 type Handler struct {
-	Topics   map[string]*ringbuf.RingBuf
+	Topics   map[string]*ringbuf.RingBuf[Message]
 	Capacity *int
 	Verbose  *int
 	Logger   *tattle.Logger
 }
 
+type Message struct {
+	Time	 	time.Time	`json:"time"`
+	Data 		[]byte		`json:"data"`
+}
+
+const (
+	MESSAGE_TIME_FIELD string = "time"
+	MESSAGE_DATA_FIELD string = "data"
+)
+
 func NewHandler(capacity *int, verbose *int, logger *tattle.Logger) Handler {
 	return Handler{
-		Topics:   make(map[string]*ringbuf.RingBuf),
+		Topics:   make(map[string]*ringbuf.RingBuf[Message]),
 		Capacity: capacity,
 		Verbose:  verbose,
 		Logger:   logger,
+	}
+}
+
+func newMessage(data []byte) Message {
+	return Message {
+		Time: time.Now(),
+		Data: data,
 	}
 }
 
@@ -75,20 +93,25 @@ func (h Handler) CreateResponse(w http.ResponseWriter, r *http.Request, topic st
 		h.Logger.Logf("Creating topic: %s\n", topic)
 	}
 
-	data := r.PostFormValue("TB_DATA")
+	// Create topic if it doesn't exist
 	if _, ok := h.Topics[topic]; !ok {
-		newTopic := ringbuf.New(*h.Capacity)
+		newTopic := ringbuf.New[Message](*h.Capacity)
 		h.Topics[topic] = &newTopic
 	}
 
+	// Read raw body
+	data := ReadBody(r, h.Logger)
+
 	if len(data) > 0 {
 		if *h.Verbose > 1 {
-			h.Logger.Logf("Create request contains data: %s\n", data)
+			h.Logger.Logf("Create request contains data: %s\n", string(data))
 		}
 
-		h.Topics[topic].Write(data)
+		// Create message on topic queue
+		h.Topics[topic].Write(newMessage(data))
 	}
 
+	// No error on empty body
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -97,6 +120,7 @@ func (h Handler) ReadResponse(w http.ResponseWriter, r *http.Request, topic stri
 		h.Logger.Logf("Reading from topic: %s\n", topic)
 	}
 
+	// Check if topic queue exists
 	if h.Topics[topic] == nil {
 		if *h.Verbose > 1 {
 			h.Logger.Logf("Topic %s not found!", topic)
@@ -105,21 +129,32 @@ func (h Handler) ReadResponse(w http.ResponseWriter, r *http.Request, topic stri
 		return
 	}
 
-	data := h.Topics[topic].Read()
+	// Get message from topic queue
+	data, err := h.Topics[topic].Read()
 
-	if data == nil {
+	// Empty queue
+	if err != nil {
 		if *h.Verbose > 1 {
 			h.Logger.Logln("Topic contains no data")
 		}
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+	msg := data.(Message)
 
 	if *h.Verbose > 1 {
-		h.Logger.Logf("Read data: %v\n", data)
+		h.Logger.Logf("Read data: %v\n", msg.Data)
 	}
 
-	_, err := w.Write([]byte(fmt.Sprint(data)))
+	// Marshal to JSON
+	msgJson, err := json.Marshal(msg)
+	if err != nil {
+		h.Logger.Errln("Could not marshal message into JSON")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = w.Write(msgJson)
 	if err != nil {
 		h.Logger.Errln(err.Error())
 	}
@@ -130,6 +165,7 @@ func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic st
 		h.Logger.Logf("Updating topic: %s\n", topic)
 	}
 
+	// Check if topic queue exists
 	if h.Topics[topic] == nil {
 		if *h.Verbose > 1 {
 			h.Logger.Logf("Topic %s not found!\n", topic)
@@ -138,7 +174,10 @@ func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic st
 		return
 	}
 
-	data := r.PostFormValue("TB_DATA")
+	// Read raw body
+	data := ReadBody(r, h.Logger)
+
+	// Error on empty body
 	if len(data) < 1 {
 		if *h.Verbose > 1 {
 			h.Logger.Logln("Data not found!")
@@ -151,7 +190,8 @@ func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic st
 		h.Logger.Logf("Updating with data: %s\n", data)
 	}
 
-	h.Topics[topic].Write(data)
+	// Create message on topic queue
+	h.Topics[topic].Write(newMessage(data))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -160,6 +200,7 @@ func (h Handler) DeleteResponse(w http.ResponseWriter, r *http.Request, topic st
 		h.Logger.Logf("Deleting topic: %s\n", topic)
 	}
 
+	// Check if topic exists
 	if h.Topics[topic] == nil {
 		if *h.Verbose > 1 {
 			h.Logger.Logf("Topic not found!")
@@ -168,6 +209,7 @@ func (h Handler) DeleteResponse(w http.ResponseWriter, r *http.Request, topic st
 		return
 	}
 
+	// Remove topic queue from map
 	delete(h.Topics, topic)
 	w.WriteHeader(http.StatusOK)
 }

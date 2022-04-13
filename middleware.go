@@ -20,16 +20,20 @@ package main
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
 	"github.com/bdreece/tattle"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
+)
+
+const (
+	AUTH_USERNAME_FIELD string = "username"
+	AUTH_PASSWORD_FIELD string = "password"
+	AUTH_TOPICS_FIELD string = "topics"
 )
 
 type Middleware struct {
@@ -63,19 +67,23 @@ func (m *Middleware) verifyAuthRequest(body *map[string]interface{}) bool {
 		ok   bool
 	)
 
-	if user, ok = (*body)["username"].(string); !ok {
+	// Check if body JSON contains username field, pun to string
+	if user, ok = (*body)[AUTH_USERNAME_FIELD].(string); !ok {
 		if *m.Verbose > 1 {
 			m.Logger.Logln("Request body missing 'username' field!")
 		}
 		return false
 	}
 
-	if pass, ok = (*body)["username"].(string); !ok {
+	// Check if body JSON contains password field, pun to string
+	if pass, ok = (*body)[AUTH_PASSWORD_FIELD].(string); !ok {
 		if *m.Verbose > 1 {
 			m.Logger.Logln("Request body missing 'password' field!")
 		}
 		return false
 	}
+
+	// Validate username and password against server
 	if user != *m.User || pass != m.Pass {
 		if *m.Verbose > 1 {
 			m.Logger.Logln("Username or password incorrect!")
@@ -87,37 +95,11 @@ func (m *Middleware) verifyAuthRequest(body *map[string]interface{}) bool {
 
 func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var (
-		data   []byte
 		topics []string
 		ok     bool
 	)
 
-	if *m.Verbose > 1 {
-		m.Logger.Logln("No 'username' field in request body")
-	}
-
-	// Read request body
-	body := make(map[string]interface{})
-	buf := make([]byte, 1024)
-	for {
-		n, err := r.Body.Read(buf)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			m.Logger.Errf("Error reading request body: %s\n", err.Error())
-			continue
-		}
-		if n > 0 {
-			data = append(data, buf...)
-		}
-	}
-
-	// Unmarshal data
-	if err := json.Unmarshal(data, &body); err != nil {
-		m.Logger.Errf("Error unmarshaling request body: %s\n", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-	}
+	body := ReadJSON(r, m.Logger)
 
 	// Verify authentication info
 	if !m.verifyAuthRequest(&body) {
@@ -125,6 +107,7 @@ func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			m.Logger.Logln("User failed to log in")
 		}
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	if *m.Verbose > 0 {
@@ -132,25 +115,28 @@ func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check for topics in request body
-	if topics, ok = body["topics"].([]string); !ok {
+	if topics, ok = body[AUTH_TOPICS_FIELD].([]string); !ok {
 		if *m.Verbose > 0 {
 			m.Logger.Logln("No topics listed!")
 		}
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	// Create JWT
+	// Create JWT claims
 	claims := &jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(*m.JWTTimeout)),
 		Issuer:    *m.User,
 		Audience:  topics,
 	}
 
+	// Create JWT and sign
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	ss, err := token.SignedString([]byte(*m.Secret))
 	if err != nil {
 		m.Logger.Errf("Error creating JWT: %s\n", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	w.Write([]byte(ss))
@@ -171,9 +157,10 @@ func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// Get requested topic
 		topic := mux.Vars(r)["topic"]
 
-		// Parse token
+		// Parse JWT
 		token, err = jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			var (
 				claims jwt.RegisteredClaims
@@ -189,8 +176,9 @@ func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
 				return nil, errors.New("invalid claims type")
 			}
 
+			// Validate authorized topics against requested topic
 			if !claims.VerifyAudience(topic, true) {
-				return nil, errors.New("invalid audience")
+				return nil, errors.New("not authorized for topic")
 			}
 
 			return []byte(*m.Secret), nil
@@ -200,7 +188,6 @@ func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			if *m.Verbose > 0 {
 				m.Logger.Logf("Error parsing token: %s\n", err.Error())
 			}
-
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -217,7 +204,6 @@ func (m Middleware) AuthMiddleware(next http.Handler) http.Handler {
 		if *m.Verbose > 0 {
 			m.Logger.Logln("Successfully validated token!")
 		}
-
 		next.ServeHTTP(w, r)
 	})
 }
