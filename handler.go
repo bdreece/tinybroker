@@ -37,7 +37,7 @@ type Handler struct {
 
 type Message struct {
 	Time	 	time.Time	`json:"time"`
-	Data 		[]byte		`json:"data"`
+	Data 		string		`json:"data"`
 }
 
 const (
@@ -57,7 +57,7 @@ func NewHandler(capacity *int, verbose *int, logger *tattle.Logger) Handler {
 func newMessage(data []byte) Message {
 	return Message {
 		Time: time.Now(),
-		Data: data,
+		Data: string(data),
 	}
 }
 
@@ -78,7 +78,9 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "DELETE":
 		h.DeleteResponse(w, r, topic)
 	default:
-		h.Logger.Errf("Invalid request method: %s\n", r.Method)
+		if *h.Verbose > 0 {
+			h.Logger.Logf("Invalid request method: %s\n", r.Method)
+		}
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -100,15 +102,15 @@ func (h Handler) CreateResponse(w http.ResponseWriter, r *http.Request, topic st
 	}
 
 	// Read raw body
-	data := ReadBody(r, h.Logger)
+	data, n := ReadBody(r, h.Logger)
 
 	if len(data) > 0 {
 		if *h.Verbose > 1 {
-			h.Logger.Logf("Create request contains data: %s\n", string(data))
+			h.Logger.Logf("Create request contains data: %s\n", data)
 		}
 
 		// Create message on topic queue
-		h.Topics[topic].Write(newMessage(data))
+		h.Topics[topic].Write(newMessage(data[:n]))
 	}
 
 	// No error on empty body
@@ -123,7 +125,7 @@ func (h Handler) ReadResponse(w http.ResponseWriter, r *http.Request, topic stri
 	// Check if topic queue exists
 	if h.Topics[topic] == nil {
 		if *h.Verbose > 1 {
-			h.Logger.Logf("Topic %s not found!", topic)
+			h.Logger.Logf("Topic %s not found!\n", topic)
 		}
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -149,14 +151,15 @@ func (h Handler) ReadResponse(w http.ResponseWriter, r *http.Request, topic stri
 	// Marshal to JSON
 	msgJson, err := json.Marshal(msg)
 	if err != nil {
-		h.Logger.Errln("Could not marshal message into JSON")
+		// Message should be serializable, failure not on behalf of user
+		h.Logger.Errf("Error marshalling JSON: %s\n", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	_, err = w.Write(msgJson)
 	if err != nil {
-		h.Logger.Errln(err.Error())
+		h.Logger.Errf("Error writing response: %s\n", err.Error())
 	}
 }
 
@@ -175,7 +178,7 @@ func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic st
 	}
 
 	// Read raw body
-	data := ReadBody(r, h.Logger)
+	data, n := ReadBody(r, h.Logger)
 
 	// Error on empty body
 	if len(data) < 1 {
@@ -191,7 +194,7 @@ func (h Handler) UpdateResponse(w http.ResponseWriter, r *http.Request, topic st
 	}
 
 	// Create message on topic queue
-	h.Topics[topic].Write(newMessage(data))
+	h.Topics[topic].Write(newMessage(data[:n]))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -203,7 +206,7 @@ func (h Handler) DeleteResponse(w http.ResponseWriter, r *http.Request, topic st
 	// Check if topic exists
 	if h.Topics[topic] == nil {
 		if *h.Verbose > 1 {
-			h.Logger.Logf("Topic not found!")
+			h.Logger.Logf("Topic %s not found!\n")
 		}
 		w.WriteHeader(http.StatusNotFound)
 		return
