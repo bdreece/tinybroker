@@ -28,7 +28,6 @@ func ReadBody(r *http.Request, l *tattle.Logger) ([]byte, int) {
 		}
 		
 		if err == io.EOF {
-			l.Logln("Reached EOF")
 			break
 		}
 	}
