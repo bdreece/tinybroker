@@ -1,11 +1,11 @@
 module github.com/bdreece/tinybroker
 
-go 1.17
+go 1.18
 
 require (
 	github.com/akamensky/argparse v1.3.1
-	github.com/bdreece/go-structs/ringbuf v0.0.0-20220228220928-3ba909455b80
-	github.com/bdreece/tattle v0.0.0-20220412212315-8efe770908bf
+	github.com/bdreece/go-structs/ringbuf v0.0.0-20220413050149-5376b976b740
+	github.com/bdreece/tattle v0.0.0-20220412214904-97299ac693da
 	github.com/golang-jwt/jwt/v4 v4.4.1
 	github.com/gorilla/mux v1.8.0
 )
